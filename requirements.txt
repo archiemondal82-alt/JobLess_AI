@@ -1,7 +1,7 @@
 streamlit==1.31.0
 
 # AI Providers (all free tier)
-google-generativeai==0.3.2
+google-generativeai>=0.4.1
 groq>=0.4.0
 cohere>=5.0.0
 

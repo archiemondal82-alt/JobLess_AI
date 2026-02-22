@@ -93,14 +93,14 @@ _HEADER_HTML = """<!DOCTYPE html>
 <title>JobLess AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400&display=swap" rel="stylesheet">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; cursor: none !important; }
+* { margin:0; padding:0; box-sizing:border-box; }
 
 /* FIX 1: overflow:hidden on body kills 3D transforms on iOS Safari.
    Use overflow:clip instead — it clips visually without creating a
    stacking context that flattens preserve-3d children.
    Fallback: auto (allows scroll in very old browsers, not ideal but safe). */
 body {
-  background: #060b14!important;
+  background: transparent!important;
   overflow: clip; /* modern browsers */
   overflow: hidden; /* legacy fallback — overridden above in supporting browsers */
   font-family: 'Inter', sans-serif;
@@ -282,29 +282,33 @@ body {
 <script>
 (function(){
   var fe = window.frameElement;
-  if(fe){ fe.style.cssText += 'border:none!important;outline:none!important;box-shadow:none!important;background:#060b14!important;'; }
+  if(fe){ fe.style.cssText += 'border:none!important;outline:none!important;box-shadow:none!important;background:transparent!important;'; }
 })();
 </script>
 
 <script>
+/* ── Forward mouse events from this iframe to the parent window
+   so the custom cursor keeps tracking over the header area. ── */
 (function() {
-  var s = document.createElement('style');
-  s.textContent = '* { cursor: none !important; }';
-  document.head.appendChild(s);
-  function fwd(e) {
+  function forwardMouse(e) {
     try {
       var fe = window.frameElement;
       if (!fe) return;
-      var r = fe.getBoundingClientRect();
-      window.parent.document.dispatchEvent(new window.parent.MouseEvent(e.type, {
-        clientX: e.clientX + r.left, clientY: e.clientY + r.top,
+      var rect = fe.getBoundingClientRect();
+      var px = e.clientX + rect.left;
+      var py = e.clientY + rect.top;
+      var synth = new window.parent.MouseEvent(e.type, {
+        clientX: px, clientY: py,
         bubbles: true, cancelable: false
-      }));
+      });
+      window.parent.document.dispatchEvent(synth);
     } catch(err) {}
   }
-  ['mousemove','mouseover','mouseout','mousedown','mouseup'].forEach(function(ev) {
-    document.addEventListener(ev, fwd, { passive: true });
-  });
+  document.addEventListener('mousemove',  forwardMouse, { passive: true });
+  document.addEventListener('mouseover',  forwardMouse, { passive: true });
+  document.addEventListener('mouseout',   forwardMouse, { passive: true });
+  document.addEventListener('mousedown',  forwardMouse, { passive: true });
+  document.addEventListener('mouseup',    forwardMouse, { passive: true });
 })();
 </script>
 
@@ -401,7 +405,7 @@ body {
       </svg>
     </div>
   </div>
-  <p class="sub">Transform your potential into a concrete career roadmap — powered by AI.</p>
+  <p class="sub">Paste your resume. Get a real plan. Stop guessing what to do next.</p>
 </div>
 
 <script>
@@ -592,28 +596,10 @@ class Config:
     def set_provider(self, provider: str):
         st.session_state["ai_provider"] = provider
 
-    _SECRETS = {
-        "Google Gemini  🆓": "GEMINI_API_KEY",
-        "Groq  🆓⚡": "GROQ_API_KEY",
-        "Cohere  🆓": "COHERE_API_KEY",
-    }
-
     def get_api_key(self, provider=None) -> str:
         p = provider or self.get_provider()
         val = st.session_state.get(f"api_key_{p}", "")
-        if val:
-            return val
-        try:
-            secret_key = self._SECRETS.get(p, "")
-            if secret_key:
-                return st.secrets.get(secret_key, "")
-        except Exception:
-            pass
-        return os.getenv(self._ENV.get(p, ""), "")
-
-    def using_own_key(self, provider=None) -> bool:
-        p = provider or self.get_provider()
-        return bool(st.session_state.get(f"api_key_{p}", ""))
+        return val or os.getenv(self._ENV.get(p, ""), "")
 
     def set_api_key(self, key: str, provider=None) -> bool:
         p = provider or self.get_provider()
@@ -643,17 +629,13 @@ class AIHandler:
             if not _GEMINI_OK:
                 raise RuntimeError("Run: pip install google-generativeai")
             genai.configure(api_key=api_key)
-            try:
-                gen_config = genai.GenerationConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=temperature,
-                    **({"response_mime_type": "application/json"} if json_mode else {})
-                )
-            except TypeError:
-                gen_config = genai.GenerationConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=temperature,
-                )
+            gen_config = genai.GenerationConfig(
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+                # Native JSON mode: Gemini guarantees a parseable JSON response,
+                # eliminating the need for markdown-fence stripping heuristics.
+                **({"response_mime_type": "application/json"} if json_mode else {})
+            )
             model = genai.GenerativeModel(
                 model_name, generation_config=gen_config)
             response = model.generate_content(prompt)
@@ -689,7 +671,7 @@ class AIHandler:
     def get_career_advice(self, input_text: str, model_name: str, context: Dict) -> Optional[Dict]:
         try:
             prompt = f"""
-            Act as an Elite Indian Career Strategist and AI Career Coach.
+            You're a senior career advisor in India who has worked with thousands of candidates — from freshers to people switching industries after a decade.
             
             **User Profile Analysis:**
             {input_text}
@@ -700,7 +682,7 @@ class AIHandler:
             - Location Preference: {context.get('location', 'Flexible')}
             
             **Task:**
-            Provide a comprehensive career analysis. Return ONLY a valid JSON object (no markdown, no code blocks) with this exact structure:
+            Return ONLY valid JSON — no markdown, no code fences:
             
             {{
               "profile_summary": "A concise 2-sentence professional summary",
@@ -722,7 +704,7 @@ class AIHandler:
               ]
             }}
             
-            Suggest 6-8 distinct career paths. Return ONLY the JSON object.
+            Give 6-8 different paths. Be specific — vague suggestions aren't useful to anyone. Return ONLY the JSON.
             """
             txt = self._call_llm(
                 prompt, model_name, max_tokens=8192, temperature=0.7, json_mode=True)
@@ -734,9 +716,9 @@ class AIHandler:
     def build_ats_resume(self, profile_data: Dict, model_name: str) -> Optional[Dict]:
         try:
             prompt = f"""
-            You are an expert ATS resume writer and career coach.
+            You've helped people get jobs at Google, Flipkart, Razorpay, TCS, and dozens of other companies. You know what gets past ATS filters and what gets tossed in the bin.
             
-            Create a highly optimized, ATS-friendly resume based on this profile:
+            Build a proper resume for this person:
             
             Name: {profile_data.get('name', '')}
             Target Role: {profile_data.get('target_role', '')}
@@ -776,9 +758,9 @@ class AIHandler:
 
     def generate_interview_questions(self, role: str, level: str, model_name: str) -> Optional[List]:
         try:
-            prompt = f"""You are a world-class technical recruiter who has conducted 10,000+ interviews at companies like Google, Microsoft, Amazon, Flipkart, Infosys, TCS, Wipro, Zomato, CRED, Razorpay, PhonePe, Swiggy, Meesho, and other top Indian and global tech companies.
+            prompt = f"""You've done 10,000+ interviews at Google, Microsoft, Amazon, Flipkart, Zomato, CRED, Razorpay, and PhonePe. You know exactly what actually gets asked — not the textbook stuff, the real questions.
 
-Generate a realistic mock interview for:
+Generate a mock interview for:
 Role: {role}
 Level: {level}
 
@@ -807,7 +789,7 @@ Start with [ immediately."""
             safe_a = answer.replace('"', "'")[:1500]
             companies_str = ", ".join(
                 companies) if companies else "top tech companies"
-            prompt = f"""You are a warm but brutally honest senior hiring manager at {companies_str} evaluating a {role} candidate.
+            prompt = f"""You're a senior hiring manager at {companies_str}, reviewing a {role} candidate. You've seen thousands of answers — you can tell a good one from a bad one in the first 30 seconds.
 
 Question asked: {safe_q}
 Candidate answered: {safe_a}
@@ -841,7 +823,7 @@ Start with {{ immediately."""
             companies_str = ", ".join(
                 companies[:3]) if companies else "top companies"
 
-            prompt = f"""You are a kind but honest Head of Talent at {companies_str} reviewing a complete mock interview for a {role} ({level}) position.
+            prompt = f"""You're the Head of Talent at {companies_str}. Someone just finished a mock interview for a {role} ({level}) position. Give them an honest, actually useful final verdict — the kind you'd give a friend, not a form letter.
 
 Summary: avg score {avg_score:.1f}/100, scores {scores}, weaknesses {weak_areas[:3]}, strengths {strong_areas[:3]}.
 
@@ -1142,9 +1124,6 @@ class UIComponents:
                 try {
                     var P = window.parent, pdoc = P.document;
                     if (!pdoc || !pdoc.body) { setTimeout(init, 80); return; }
-                    if (P.__nexstepRunning && !pdoc.getElementById('ns-canvas')) {
-                        P.__nexstepRunning = false;
-                    }
                     if (P.__nexstepRunning) return;
                     P.__nexstepRunning = true;
                     if (!pdoc.getElementById('nexstep-injected-css')) {
@@ -1188,7 +1167,7 @@ class UIComponents:
         })();
         </script>
         """
-        components.html(particle_js, height=1, scrolling=False)
+        components.html(particle_js, height=0, scrolling=False)
 
     @staticmethod
     def show_api_setup_banner():
@@ -1196,14 +1175,14 @@ class UIComponents:
             '<div style="position:relative;overflow:hidden;border-radius:20px;margin-bottom:24px;padding:24px 28px;'
             'background:linear-gradient(135deg,rgba(255,255,255,0.09) 0%,rgba(0,210,255,0.06) 60%,rgba(168,85,247,0.07) 100%);'
             'box-shadow:0 8px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.2),0 0 0 1px rgba(255,255,255,0.09);">'
-            '<div style="font-size:1.1rem;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#fff 0%,#a8f0ff 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">&#10022; Setup Required &mdash; Choose Your Free AI Provider</div>'
-            '<div style="color:rgba(255,255,255,0.4);font-size:0.74rem;letter-spacing:0.06em;margin-bottom:16px;">100% free &nbsp;&middot;&nbsp; no credit card &nbsp;&middot;&nbsp; no billing &nbsp;&middot;&nbsp; ever</div>'
+            '<div style="font-size:1.1rem;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#fff 0%,#a8f0ff 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">&#10022; One quick thing before we start</div>'
+            '<div style="color:rgba(255,255,255,0.4);font-size:0.74rem;letter-spacing:0.06em;margin-bottom:16px;">all three providers below are 100% free — no credit card, no billing, no catch</div>'
             '<div style="height:1px;margin-bottom:14px;background:linear-gradient(90deg,transparent,rgba(0,210,255,0.4),rgba(168,85,247,0.3),transparent);"></div>'
             '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px;"><span style="background:rgba(66,133,244,0.18);border:1px solid rgba(66,133,244,0.45);border-radius:20px;padding:4px 13px;font-size:0.81rem;font-weight:700;color:#93c5fd;white-space:nowrap;">&#128309; Google Gemini</span><span style="color:rgba(255,255,255,0.38);font-size:0.74rem;">15 req/min &middot; 1500/day &middot; forever free</span><a href="https://aistudio.google.com/app/apikey" target="_blank" style="margin-left:auto;font-size:0.77rem;color:#7dd3fc;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(125,211,252,0.3);white-space:nowrap;">aistudio.google.com &rarr;</a></div>'
             '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px;"><span style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.45);border-radius:20px;padding:4px 13px;font-size:0.81rem;font-weight:700;color:#fdba74;white-space:nowrap;">&#9889; Groq</span><span style="color:rgba(255,255,255,0.38);font-size:0.74rem;">Llama 3.3-70B &middot; ultra-fast &middot; free forever</span><a href="https://console.groq.com/keys" target="_blank" style="margin-left:auto;font-size:0.77rem;color:#fdba74;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(253,186,116,0.3);white-space:nowrap;">console.groq.com &rarr;</a></div>'
             '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;"><span style="background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.45);border-radius:20px;padding:4px 13px;font-size:0.81rem;font-weight:700;color:#5eead4;white-space:nowrap;">&#127754; Cohere</span><span style="color:rgba(255,255,255,0.38);font-size:0.74rem;">Command-R+ &middot; generous free trial</span><a href="https://dashboard.cohere.com/api-keys" target="_blank" style="margin-left:auto;font-size:0.77rem;color:#5eead4;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(94,234,212,0.3);white-space:nowrap;">dashboard.cohere.com &rarr;</a></div>'
             '<div style="height:1px;margin-bottom:14px;background:linear-gradient(90deg,transparent,rgba(0,210,255,0.4),rgba(168,85,247,0.3),transparent);"></div>'
-            '<div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:30px;padding:6px 18px;font-size:0.79rem;color:rgba(255,255,255,0.78);font-weight:600;">&#128072;&nbsp; Sidebar &rarr; pick provider &rarr; paste key &rarr; 30 seconds</div>'
+            '<div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:30px;padding:6px 18px;font-size:0.79rem;color:rgba(255,255,255,0.78);font-weight:600;">&#128072;&nbsp; Sidebar &rarr; pick a provider &rarr; paste your key &rarr; done in 30 seconds</div>'
             '</div>'
         )
         st.markdown(html, unsafe_allow_html=True)
@@ -1219,12 +1198,12 @@ def render_tab_career_analysis(ai_handler: AIHandler, pdf_handler: PDFHandler,
     st.markdown("### 📋 Input Your Profile")
     st.markdown("""
     <div style="background:rgba(0,210,255,0.06);border:1px solid rgba(0,210,255,0.18);border-radius:14px;padding:14px 20px;margin-bottom:22px;">
-      <span style="color:#00d2ff;font-weight:700;font-size:0.95rem;">Step 1 — Provide your profile &nbsp;·&nbsp;</span>
-      <span style="color:#64748b;font-size:0.88rem;">Upload a PDF resume or type your details manually.</span>
+      <span style="color:#00d2ff;font-weight:700;font-size:0.95rem;">Step 1 &nbsp;·&nbsp;</span>
+      <span style="color:#64748b;font-size:0.88rem;">Upload your resume or just type out your background — whatever's easier.</span>
     </div>
     """, unsafe_allow_html=True)
 
-    input_method = st.radio("Input method", ["📄 Upload Resume (PDF)", "✍️ Manual Entry"],
+    input_method = st.radio("Input method", ["📄 Upload Resume (PDF)", "✍️ Type it out"],
                             horizontal=True, label_visibility="collapsed")
 
     raw_text = ""
@@ -1235,42 +1214,39 @@ def render_tab_career_analysis(ai_handler: AIHandler, pdf_handler: PDFHandler,
             st.success(f"✅ Loaded: **{uploaded_file.name}**")
             raw_text = pdf_handler.extract_text(uploaded_file)
     else:
-        raw_text = st.text_area("Your skills, experience & education", height=180,
+        raw_text = st.text_area("Skills, experience, education — whatever you've got", height=180,
                                 placeholder="e.g.\n• Python, SQL, Machine Learning\n• 2 yrs data analyst @ TCS\n• B.Tech CS, NIT Durgapur, 2023")
 
     st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
     st.markdown("""
     <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.18);border-radius:14px;padding:14px 20px;margin-bottom:16px;">
-      <span style="color:#a855f7;font-weight:700;font-size:0.95rem;">Step 2 — Set your preferences</span>
+      <span style="color:#a855f7;font-weight:700;font-size:0.95rem;">Step 2 &nbsp;·&nbsp; What kind of roles are you looking at?</span>
     </div>
     """, unsafe_allow_html=True)
 
     p1, p2, p3 = st.columns(3)
     with p1:
-        target_industry = st.multiselect("🏭 Target Industries",
+        target_industry = st.multiselect("🏭 Industries you're interested in",
                                          ["Technology", "Finance", "Healthcare",
                                              "Education", "E-Commerce", "Consulting"],
                                          default=["Technology"])
     with p2:
-        career_stage = st.selectbox("🪜 Career Stage",
-                                    ["Entry Level (0-2 yrs)", "Mid Level (3-6 yrs)", "Senior Level (7+ yrs)"])
+        career_stage = st.selectbox("🪜 Where you are right now",
+                                    ["Just starting out (0-2 yrs)", "Mid-career (3-6 yrs)", "Senior level (7+ yrs)"])
     with p3:
-        location_pref = st.selectbox("📍 Location",
+        location_pref = st.selectbox("📍 Where you want to work",
                                      ["India - Metro", "India - Remote", "India - Tier 2", "International"])
         st.session_state.location_pref = location_pref
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    analyze_btn = st.button("🔮 Analyze My Career Path",
+    analyze_btn = st.button("🔮 Show me my career options",
                             use_container_width=True, type="primary")
 
     if analyze_btn:
         if not selected_model:
-            st.error("⚠️ Configure your API key in the sidebar first.")
+            st.error("⚠️ Set up your API key in the sidebar first.")
         elif not raw_text:
-            st.warning("⚠️ Please upload a resume or enter your details above.")
-        elif not ai_handler.config.using_own_key() and st.session_state.get('free_uses', 0) >= 5:
-            st.warning("⚠️ You've used all 5 free analyses this session. Add your own free API key in the sidebar!")
-            st.info("🔑 Get a free Groq key in 2 mins: https://console.groq.com/keys")
+            st.warning("⚠️ Add your resume or type something about yourself above.")
         else:
             context = {
                 'industries': target_industry, 'career_stage': career_stage,
@@ -1278,17 +1254,15 @@ def render_tab_career_analysis(ai_handler: AIHandler, pdf_handler: PDFHandler,
                 'include_learning_path': include_learning_path,
                 'include_interview_prep': include_interview_prep,
             }
-            with st.spinner("🧠 AI is analyzing your profile… (30–60 seconds)"):
+            with st.spinner("🧠 Thinking through your profile… (usually 30-60 seconds)"):
                 data = ai_handler.get_career_advice(
                     raw_text, selected_model, context)
 
             if data:
                 st.session_state.current_analysis = data
                 history_manager.add_to_history(raw_text, data, context)
-                if not ai_handler.config.using_own_key():
-                    st.session_state['free_uses'] = st.session_state.get('free_uses', 0) + 1
                 st.success(
-                    "✅ Analysis complete! Scroll down to see your results.")
+                    "✅ Done! Scroll down to see your results.")
                 st.balloons()
 
     if st.session_state.current_analysis:
@@ -1302,7 +1276,7 @@ def _render_career_results(data: Dict):
     skill_count = len(data.get('current_skills', []))
 
     st.markdown("---")
-    st.markdown("## 📊 Your Career Analysis")
+    st.markdown("## 📊 Here's what we found")
     st.markdown(f"""
     <div class="stats-row">
       <div class="stat-card"><div class="stat-num">{len(careers)}</div><div class="stat-lbl">Career Paths</div></div>
@@ -1315,9 +1289,9 @@ def _render_career_results(data: Dict):
     skills_html = render_skill_badges(data.get('current_skills', []))
     st.markdown(f"""
     <div class="result-card">
-        <h3>🧬 Profile Summary</h3>
+        <h3>🧬 Quick take on your profile</h3>
         <p style="font-size:1.05rem;color:#cbd5e1;line-height:1.7;margin-bottom:14px;">{data.get('profile_summary', 'N/A')}</p>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">DETECTED SKILLS</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">SKILLS WE SPOTTED</div>
         <div>{skills_html}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -1325,7 +1299,7 @@ def _render_career_results(data: Dict):
     if not careers:
         return
 
-    st.markdown("### 🎯 Recommended Career Paths")
+    st.markdown("### 🎯 Roles that could work for you")
     for idx, job in enumerate(careers, 1):
         score = job.get('match_score', 0)
         keywords = job.get('job_search_keywords', job['title'])
@@ -1350,11 +1324,11 @@ def _render_career_results(data: Dict):
                 <div style="padding-right:16px;">
                   <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#4ade80;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:6px;padding:4px 12px;display:inline-block;margin-bottom:12px;">💰 {job['salary_range']}</span>
                   <p style="color:#94a3b8;font-size:.9rem;line-height:1.65;margin-bottom:14px;">{job.get('reason','')}</p>
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">▸ NEXT STEPS</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">▸ WHAT TO DO NEXT</div>
                   <ul style="margin:0;padding-left:18px;">{steps_html}</ul>
-                  {"<div style='font-family:JetBrains Mono,monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin:12px 0 6px;'>▸ TOP COMPANIES</div>" + comp_badges if companies else ""}
-                  {"<div style='font-family:JetBrains Mono,monospace;font-size:.65rem;color:#a855f7;text-transform:uppercase;letter-spacing:.12em;margin:12px 0 6px;'>▸ CERTIFICATIONS</div>" + cert_badges if certs else ""}
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 4px;">▸ APPLY NOW</div>
+                  {"<div style='font-family:JetBrains Mono,monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin:12px 0 6px;'>▸ COMPANIES TO TARGET</div>" + comp_badges if companies else ""}
+                  {"<div style='font-family:JetBrains Mono,monospace;font-size:.65rem;color:#a855f7;text-transform:uppercase;letter-spacing:.12em;margin:12px 0 6px;'>▸ CERTS WORTH GETTING</div>" + cert_badges if certs else ""}
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#00d2ff;text-transform:uppercase;letter-spacing:.12em;margin:14px 0 4px;">▸ START APPLYING</div>
                   {jlinks_html}
                 </div>
                 """, unsafe_allow_html=True)
@@ -1374,7 +1348,7 @@ def _render_career_results(data: Dict):
                     st.altair_chart(c, use_container_width=True)
                 if learn_html:
                     st.markdown(f"""
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#34d399;text-transform:uppercase;letter-spacing:.12em;margin:10px 0 6px;">▸ LEARNING PATH</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#34d399;text-transform:uppercase;letter-spacing:.12em;margin:10px 0 6px;">▸ HOW TO GET THERE</div>
                     {learn_html}""", unsafe_allow_html=True)
             with col_right:
                 st.markdown(ring_html, unsafe_allow_html=True)
@@ -1388,13 +1362,13 @@ def _render_career_results(data: Dict):
 
 def render_tab_history():
     """Tab 2 — Analysis History."""
-    st.markdown("### 📜 Analysis History")
+    st.markdown("### 📜 Previous Analyses")
     if not st.session_state.history:
         st.markdown("""
         <div style="text-align:center;padding:60px 20px;color:#475569;">
           <div style="font-size:3rem;margin-bottom:12px;">📭</div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;">No history yet</div>
-          <div style="font-size:.85rem;margin-top:6px;">Run your first analysis to see it here</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;">Nothing here yet</div>
+          <div style="font-size:.85rem;margin-top:6px;">Run an analysis and it'll show up here</div>
         </div>""", unsafe_allow_html=True)
         return
 
@@ -1416,26 +1390,26 @@ def render_tab_history():
               <div style="color:#64748b;font-size:.85rem;">Paths: {titles}</div>
               <div style="margin-top:10px;">{badges}</div>
             </div>""", unsafe_allow_html=True)
-            if st.button("♻️ Restore This Analysis", key=f"restore_{idx}"):
+            if st.button("♻️ Load this analysis", key=f"restore_{idx}"):
                 st.session_state.current_analysis = record['analysis']
-                st.success("✅ Analysis restored! Go to Career Analysis tab.")
+                st.success("✅ Loaded. Head to the Career Analysis tab.")
 
 
 def render_tab_compare():
     """Tab 3 — Career Path Comparison."""
-    st.markdown("### ⚖️ Career Path Comparison")
+    st.markdown("### ⚖️ Compare Career Paths")
     if not st.session_state.current_analysis:
         st.markdown("""
         <div style="text-align:center;padding:60px 20px;color:#475569;">
           <div style="font-size:3rem;margin-bottom:12px;">⚖️</div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;">Nothing to compare yet</div>
-          <div style="font-size:.85rem;margin-top:6px;">Run a career analysis first</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;">Run an analysis first</div>
+          <div style="font-size:.85rem;margin-top:6px;">Then come back here to compare your options side by side</div>
         </div>""", unsafe_allow_html=True)
         return
 
     careers = st.session_state.current_analysis.get('careers', [])
     if len(careers) < 2:
-        st.info("Run an analysis with 2+ career paths to unlock comparison.")
+        st.info("Need at least 2 career paths to compare. Run a full analysis first.")
         return
 
     cols = st.columns(len(careers))
@@ -1470,21 +1444,21 @@ def render_tab_compare():
 
 def render_tab_resources():
     """Tab 4 — Learning & Career Resources."""
-    st.markdown("### 📚 Learning & Career Resources")
+    st.markdown("### 📚 Useful Resources")
 
-    st.markdown("#### 🎓 Top Learning Platforms")
+    st.markdown("#### 🎓 Places to learn")
     st.markdown("""
     <div class="resource-grid">
       <a href="https://coursera.org" target="_blank" class="resource-card"><div class="rc-icon">🎓</div><div class="rc-name">Coursera</div><div class="rc-desc">University-backed courses, Google & IBM certificates</div><span class="rc-tag">FREE AUDIT</span></a>
-      <a href="https://www.udemy.com" target="_blank" class="resource-card"><div class="rc-icon">🧑‍💻</div><div class="rc-name">Udemy</div><div class="rc-desc">Practical skills — dev, design, business, data science</div><span class="rc-tag">PAID</span></a>
+      <a href="https://www.udemy.com" target="_blank" class="resource-card"><div class="rc-icon">🧑‍💻</div><div class="rc-name">Udemy</div><div class="rc-desc">Practical stuff — dev, design, data science, business</div><span class="rc-tag">PAID</span></a>
       <a href="https://linkedin.com/learning" target="_blank" class="resource-card"><div class="rc-icon">💼</div><div class="rc-name">LinkedIn Learning</div><div class="rc-desc">Business & tech courses linked to your LinkedIn profile</div><span class="rc-tag">1 MONTH FREE</span></a>
-      <a href="https://nptel.ac.in" target="_blank" class="resource-card"><div class="rc-icon">🇮🇳</div><div class="rc-name">NPTEL</div><div class="rc-desc">IIT-quality courses, free with certifications</div><span class="rc-tag">FREE</span></a>
-      <a href="https://www.freecodecamp.org" target="_blank" class="resource-card"><div class="rc-icon">🔥</div><div class="rc-name">freeCodeCamp</div><div class="rc-desc">Full stack development, data science — completely free</div><span class="rc-tag">FREE</span></a>
+      <a href="https://nptel.ac.in" target="_blank" class="resource-card"><div class="rc-icon">🇮🇳</div><div class="rc-name">NPTEL</div><div class="rc-desc">IIT-quality courses, free, with actual certificates</div><span class="rc-tag">FREE</span></a>
+      <a href="https://www.freecodecamp.org" target="_blank" class="resource-card"><div class="rc-icon">🔥</div><div class="rc-name">freeCodeCamp</div><div class="rc-desc">Full stack dev and data science — completely free, no catch</div><span class="rc-tag">FREE</span></a>
       <a href="https://grow.google/certificates" target="_blank" class="resource-card"><div class="rc-icon">🔵</div><div class="rc-name">Google Career Certs</div><div class="rc-desc">Data Analytics, PM, Cybersecurity, UX Design</div><span class="rc-tag">CERTIFICATE</span></a>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("#### 🔍 Job Search Portals")
+    st.markdown("#### 🔍 Job boards")
     st.markdown("""
     <div class="resource-grid">
       <a href="https://www.linkedin.com/jobs" target="_blank" class="resource-card"><div class="rc-icon">🔵</div><div class="rc-name">LinkedIn Jobs</div><div class="rc-desc">World's largest professional network</div><span class="rc-tag">GLOBAL</span></a>
@@ -1492,17 +1466,17 @@ def render_tab_resources():
       <a href="https://in.indeed.com" target="_blank" class="resource-card"><div class="rc-icon">🟢</div><div class="rc-name">Indeed India</div><div class="rc-desc">Aggregated listings, company reviews, salary insights</div><span class="rc-tag">INDIA + GLOBAL</span></a>
       <a href="https://www.glassdoor.co.in" target="_blank" class="resource-card"><div class="rc-icon">💚</div><div class="rc-name">Glassdoor</div><div class="rc-desc">Jobs + salary data + anonymous company reviews</div><span class="rc-tag">SALARY INTEL</span></a>
       <a href="https://angel.co/jobs" target="_blank" class="resource-card"><div class="rc-icon">👼</div><div class="rc-name">Wellfound (AngelList)</div><div class="rc-desc">Startup jobs — equity, remote, early-stage</div><span class="rc-tag">STARTUPS</span></a>
-      <a href="https://www.instahyre.com" target="_blank" class="resource-card"><div class="rc-icon">⚡</div><div class="rc-name">Instahyre</div><div class="rc-desc">AI-matched jobs for tech professionals in India</div><span class="rc-tag">TECH INDIA</span></a>
+      <a href="https://www.instahyre.com" target="_blank" class="resource-card"><div class="rc-icon">⚡</div><div class="rc-name">Instahyre</div><div class="rc-desc">AI-matched jobs for tech folks in India</div><span class="rc-tag">TECH INDIA</span></a>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("#### 🏅 Certifications Worth Getting")
+    st.markdown("#### 🏅 Certifications that actually pay off")
     st.markdown("""
     <div class="resource-grid">
       <a href="https://aws.amazon.com/certification" target="_blank" class="resource-card"><div class="rc-icon">☁️</div><div class="rc-name">AWS Certifications</div><div class="rc-desc">Cloud Computing — most in-demand certs globally</div><span class="rc-tag">CLOUD</span></a>
-      <a href="https://cloud.google.com/certification" target="_blank" class="resource-card"><div class="rc-icon">🔶</div><div class="rc-name">Google Cloud</div><div class="rc-desc">GCP certs for data engineers and ML engineers</div><span class="rc-tag">CLOUD + ML</span></a>
-      <a href="https://www.credly.com/org/microsoft-certification" target="_blank" class="resource-card"><div class="rc-icon">🪟</div><div class="rc-name">Microsoft Azure</div><div class="rc-desc">AZ-900, AZ-104, DP-900 — top corporate demand</div><span class="rc-tag">ENTERPRISE</span></a>
-      <a href="https://www.pmi.org/certifications/project-management-pmp" target="_blank" class="resource-card"><div class="rc-icon">📋</div><div class="rc-name">PMP</div><div class="rc-desc">Project Management Professional — salary booster</div><span class="rc-tag">MANAGEMENT</span></a>
+      <a href="https://cloud.google.com/certification" target="_blank" class="resource-card"><div class="rc-icon">🔶</div><div class="rc-name">Google Cloud</div><div class="rc-desc">Good for data engineering and ML roles</div><span class="rc-tag">CLOUD + ML</span></a>
+      <a href="https://www.credly.com/org/microsoft-certification" target="_blank" class="resource-card"><div class="rc-icon">🪟</div><div class="rc-name">Microsoft Azure</div><div class="rc-desc">AZ-900, AZ-104, DP-900 — corporate teams love these</div><span class="rc-tag">ENTERPRISE</span></a>
+      <a href="https://www.pmi.org/certifications/project-management-pmp" target="_blank" class="resource-card"><div class="rc-icon">📋</div><div class="rc-name">PMP</div><div class="rc-desc">Solid salary bump if you're moving into management</div><span class="rc-tag">MANAGEMENT</span></a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1512,9 +1486,9 @@ def render_tab_resume_builder(ai_handler: AIHandler, selected_model: str):
     st.markdown("### 📝 ATS-Friendly Resume Builder")
     st.markdown("""
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;">
-      <div style="flex:1;min-width:180px;background:rgba(0,210,255,0.07);border:1px solid rgba(0,210,255,0.2);border-radius:12px;padding:14px 16px;text-align:center;"><div style="font-size:1.5rem;">1️⃣</div><div style="color:#00d2ff;font-weight:600;font-size:0.88rem;margin-top:4px;">Fill Your Details</div></div>
-      <div style="flex:1;min-width:180px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:14px 16px;text-align:center;"><div style="font-size:1.5rem;">2️⃣</div><div style="color:#a855f7;font-weight:600;font-size:0.88rem;margin-top:4px;">Paste Job Description</div></div>
-      <div style="flex:1;min-width:180px;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:14px 16px;text-align:center;"><div style="font-size:1.5rem;">3️⃣</div><div style="color:#22c55e;font-weight:600;font-size:0.88rem;margin-top:4px;">Get ATS Resume</div></div>
+      <div style="flex:1;min-width:180px;background:rgba(0,210,255,0.07);border:1px solid rgba(0,210,255,0.2);border-radius:12px;padding:14px 16px;text-align:center;"><div style="font-size:1.5rem;">1️⃣</div><div style="color:#00d2ff;font-weight:600;font-size:0.88rem;margin-top:4px;">Fill in your details</div></div>
+      <div style="flex:1;min-width:180px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:14px 16px;text-align:center;"><div style="font-size:1.5rem;">2️⃣</div><div style="color:#a855f7;font-weight:600;font-size:0.88rem;margin-top:4px;">Paste the job description</div></div>
+      <div style="flex:1;min-width:180px;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:14px 16px;text-align:center;"><div style="font-size:1.5rem;">3️⃣</div><div style="color:#22c55e;font-weight:600;font-size:0.88rem;margin-top:4px;">Get your ATS resume</div></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1532,7 +1506,7 @@ def render_tab_resume_builder(ai_handler: AIHandler, selected_model: str):
                 "Location", placeholder="Kolkata, West Bengal", key="rb_location")
         with rb_c3:
             rb_target_role = st.text_input(
-                "Target Role *", placeholder="Data Scientist / SWE / PM", key="rb_target_role")
+                "Role you're applying for *", placeholder="Data Scientist / SWE / PM", key="rb_target_role")
             rb_exp_years = st.selectbox("Experience",
                                         ["Fresher (0)", "1-2 years", "3-5 years", "5-8 years", "8+ years"], key="rb_exp_years")
         rb_linkedin = st.text_input(
@@ -1557,18 +1531,16 @@ def render_tab_resume_builder(ai_handler: AIHandler, selected_model: str):
                                    placeholder="Project: AI Resume Parser | Stack: Python + NLP | Result: 92% accuracy",
                                    key="rb_projects")
 
-    st.markdown("#### 📋 Paste Job Description *(optional but recommended)*")
+    st.markdown("#### 📋 Job description *(optional but really helps)*")
     rb_jd = st.text_area("Job Description", height=120,
-                         placeholder="Paste the full job description here for keyword-optimized resume generation.",
+                         placeholder="Paste the full job description for better keyword matching.",
                          key="rb_jd", label_visibility="collapsed")
 
-    if st.button("⚡ Build ATS Resume", use_container_width=True, type="primary", key="build_resume_btn"):
+    if st.button("⚡ Build my resume", use_container_width=True, type="primary", key="build_resume_btn"):
         if not selected_model:
-            st.error("⚠️ Configure your API key first!")
+            st.error("⚠️ API key first!")
         elif not rb_name or not rb_target_role:
-            st.error("⚠️ Please fill in at least your Name and Target Role.")
-        elif not ai_handler.config.using_own_key() and st.session_state.get('free_uses', 0) >= 5:
-            st.warning("⚠️ Free session limit reached. Add your own free API key in the sidebar!")
+            st.error("⚠️ At minimum, fill in your name and the role you're going for.")
         else:
             profile_data = {
                 "name": rb_name, "email": rb_email, "phone": rb_phone,
@@ -1579,14 +1551,12 @@ def render_tab_resume_builder(ai_handler: AIHandler, selected_model: str):
                 "projects": rb_projects, "achievements": rb_achievements,
                 "job_description": rb_jd,
             }
-            with st.spinner("✍️ Building your ATS-optimized resume... (30-45 seconds)"):
+            with st.spinner("✍️ Building your resume… (30-45 seconds)"):
                 result = ai_handler.build_ats_resume(
                     profile_data, selected_model)
             if result:
                 st.session_state.built_resume = result
-                if not ai_handler.config.using_own_key():
-                    st.session_state['free_uses'] = st.session_state.get('free_uses', 0) + 1
-                st.success("✅ Resume built successfully!")
+                st.success("✅ Resume ready!")
 
     if st.session_state.built_resume:
         _render_resume_output(st.session_state.built_resume)
@@ -1608,11 +1578,11 @@ def _render_resume_output(res: Dict):
         <div style="color:#94a3b8;font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;">ATS Score</div>
       </div>
       <div style="flex:2;min-width:200px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,210,255,0.15);border-radius:12px;padding:18px;">
-        <div style="color:#00d2ff;font-weight:600;margin-bottom:8px;">✅ Keywords Found</div>
+        <div style="color:#00d2ff;font-weight:600;margin-bottom:8px;">✅ Keywords in your resume</div>
         <div>{' '.join(f'<span style="background:rgba(0,210,255,0.15);color:#00d2ff;padding:3px 10px;border-radius:20px;font-size:0.8rem;margin:2px;display:inline-block;">{k}</span>' for k in kw_found[:10])}</div>
       </div>
       <div style="flex:2;min-width:200px;background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:18px;">
-        <div style="color:#f59e0b;font-weight:600;margin-bottom:8px;">⚠️ Keywords to Add</div>
+        <div style="color:#f59e0b;font-weight:600;margin-bottom:8px;">⚠️ Keywords worth adding</div>
         <div>{' '.join(f'<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:3px 10px;border-radius:20px;font-size:0.8rem;margin:2px;display:inline-block;">{k}</span>' for k in kw_missing[:8])}</div>
       </div>
     </div>
@@ -1622,7 +1592,7 @@ def _render_resume_output(res: Dict):
     if tips:
         st.markdown(f"""
         <div style="background:rgba(168,85,247,0.08);border-left:3px solid #a855f7;border-radius:8px;padding:12px 16px;margin-bottom:20px;">
-          <div style="color:#a855f7;font-weight:600;margin-bottom:6px;">💡 ATS Optimization Tips</div>
+          <div style="color:#a855f7;font-weight:600;margin-bottom:6px;">💡 A few things to tweak</div>
           {''.join(f'<div style="color:#94a3b8;font-size:0.9rem;margin:4px 0;">• {t}</div>' for t in tips)}
         </div>
         """, unsafe_allow_html=True)
@@ -1708,7 +1678,7 @@ WORK EXPERIENCE
             plain_text += f"{p.get('name','')}: {p.get('description','')}\n"
 
     st.download_button(
-        "📥 Download Resume (.txt — paste into Word/Google Docs)",
+        "📥 Download as .txt (paste into Word or Google Docs)",
         data=plain_text,
         file_name=f"ATS_Resume_{contact.get('name','').replace(' ','_')}.txt",
         mime="text/plain",
@@ -1718,12 +1688,12 @@ WORK EXPERIENCE
 
 def render_tab_mock_interview(ai_handler: AIHandler, selected_model: str):
     """Tab 6 — Mock Interview Simulator."""
-    st.markdown("### 🎤 Mock Interview Simulator")
+    st.markdown("### 🎤 Mock Interview")
     st.markdown("""
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;">
-      <div style="flex:1;min-width:160px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:12px 16px;text-align:center;"><div style="font-size:1.4rem;">🎯</div><div style="color:#a855f7;font-weight:600;font-size:0.85rem;margin-top:4px;">Pick Role + Level</div></div>
-      <div style="flex:1;min-width:160px;background:rgba(0,210,255,0.07);border:1px solid rgba(0,210,255,0.2);border-radius:12px;padding:12px 16px;text-align:center;"><div style="font-size:1.4rem;">💬</div><div style="color:#00d2ff;font-weight:600;font-size:0.85rem;margin-top:4px;">Answer 8 Questions</div></div>
-      <div style="flex:1;min-width:160px;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 16px;text-align:center;"><div style="font-size:1.4rem;">🤖</div><div style="color:#22c55e;font-weight:600;font-size:0.85rem;margin-top:4px;">Get AI Feedback + Score</div></div>
+      <div style="flex:1;min-width:160px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:12px 16px;text-align:center;"><div style="font-size:1.4rem;">🎯</div><div style="color:#a855f7;font-weight:600;font-size:0.85rem;margin-top:4px;">Pick a role and level</div></div>
+      <div style="flex:1;min-width:160px;background:rgba(0,210,255,0.07);border:1px solid rgba(0,210,255,0.2);border-radius:12px;padding:12px 16px;text-align:center;"><div style="font-size:1.4rem;">💬</div><div style="color:#00d2ff;font-weight:600;font-size:0.85rem;margin-top:4px;">Answer 8 questions</div></div>
+      <div style="flex:1;min-width:160px;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 16px;text-align:center;"><div style="font-size:1.4rem;">🤖</div><div style="color:#22c55e;font-weight:600;font-size:0.85rem;margin-top:4px;">Get honest feedback + score</div></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1829,7 +1799,7 @@ def _render_interview_setup(ai_handler: AIHandler, selected_model: str):
 
     if is_separator:
         st.warning(
-            "⚠️ That's a category header — please scroll and pick a role inside it.")
+            "⚠️ That's a section header — pick a role from within it.")
     elif is_others:
         mi_role = st.text_input("Custom Role",
                                 placeholder="e.g. Quant Trader, AI Ethics Researcher...",
@@ -1842,15 +1812,13 @@ def _render_interview_setup(ai_handler: AIHandler, selected_model: str):
         st.markdown(
             f'<div style="background:rgba(0,210,255,0.06);border:1px solid rgba(0,210,255,0.2);border-radius:8px;padding:10px 16px;margin-bottom:16px;color:#00d2ff;font-size:0.88rem;">✅ Ready: <strong style="color:#e2e8f0;">{mi_role}</strong> · <span style="color:#64748b;">{mi_level}</span></div>', unsafe_allow_html=True)
 
-    if st.button("🚀 Start Mock Interview", use_container_width=True, type="primary", key="start_interview"):
+    if st.button("🚀 Start interview", use_container_width=True, type="primary", key="start_interview"):
         if not selected_model:
-            st.error("⚠️ Configure your API key first!")
+            st.error("⚠️ API key first!")
         elif not mi_role or is_separator:
-            st.error("⚠️ Please select a valid job role.")
-        elif not ai_handler.config.using_own_key() and st.session_state.get('free_uses', 0) >= 5:
-            st.warning("⚠️ Free session limit reached. Add your own free API key in the sidebar!")
+            st.error("⚠️ Pick a valid role first.")
         else:
-            with st.spinner("🧠 Generating interview questions..."):
+            with st.spinner("🧠 Writing your questions…"):
                 questions = ai_handler.generate_interview_questions(
                     mi_role, mi_level, selected_model)
             if questions:
@@ -1861,8 +1829,6 @@ def _render_interview_setup(ai_handler: AIHandler, selected_model: str):
                 st.session_state.interview_role = mi_role
                 st.session_state.interview_started = True
                 st.session_state.current_q_index = 0
-                if not ai_handler.config.using_own_key():
-                    st.session_state['free_uses'] = st.session_state.get('free_uses', 0) + 1
                 st.rerun()
 
 
@@ -1897,7 +1863,7 @@ def _render_interview_session(ai_handler: AIHandler, selected_model: str):
 
     action_col1, action_col2 = st.columns([1, 2])
     with action_col1:
-        if st.button("🔄 New Interview (Reset)", key="reset_interview"):
+        if st.button("🔄 Start over", key="reset_interview"):
             for key in ("interview_started", "interview_questions", "interview_answers",
                         "interview_feedback", "final_verdict", "current_q_index"):
                 st.session_state[key] = False if key == "interview_started" else (
@@ -1911,8 +1877,8 @@ def _render_interview_session(ai_handler: AIHandler, selected_model: str):
         all_answered = answered == total_q
 
         if all_answered and unevaluated:
-            st.markdown("""<div style="background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(0,210,255,0.1));border:2px solid rgba(168,85,247,0.5);border-radius:12px;padding:4px 8px;text-align:center;margin-bottom:4px;"><div style="color:#e2e8f0;font-size:0.78rem;font-weight:600;">🎉 All answers saved! Ready to evaluate.</div></div>""", unsafe_allow_html=True)
-            if st.button("📊 Get My Full Report ✨", key="batch_eval", use_container_width=True, type="primary"):
+            st.markdown("""<div style="background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(0,210,255,0.1));border:2px solid rgba(168,85,247,0.5);border-radius:12px;padding:4px 8px;text-align:center;margin-bottom:4px;"><div style="color:#e2e8f0;font-size:0.78rem;font-weight:600;">🎉 All answered! Ready to see how you did.</div></div>""", unsafe_allow_html=True)
+            if st.button("📊 Get my feedback ✨", key="batch_eval", use_container_width=True, type="primary"):
                 progress_placeholder = st.empty()
                 for eval_idx, q in enumerate(questions):
                     q_id = q.get("id", eval_idx + 1)
@@ -1928,7 +1894,7 @@ def _render_interview_session(ai_handler: AIHandler, selected_model: str):
                 progress_placeholder.empty()
                 st.rerun()
         elif all_answered and not unevaluated:
-            st.markdown("""<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:12px;padding:8px 14px;text-align:center;"><span style="color:#22c55e;font-weight:700;font-size:0.88rem;">✅ Full report complete — scroll down for your final verdict!</span></div>""", unsafe_allow_html=True)
+            st.markdown("""<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:12px;padding:8px 14px;text-align:center;"><span style="color:#22c55e;font-weight:700;font-size:0.88rem;">✅ All done — scroll down to see your final verdict!</span></div>""", unsafe_allow_html=True)
         else:
             remaining = total_q - answered
             st.markdown(
@@ -1974,7 +1940,7 @@ def _render_interview_session(ai_handler: AIHandler, selected_model: str):
 
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
-                if st.button(f"💾 Save Answer", key=f"save_{q_id}", use_container_width=True):
+                if st.button(f"💾 Save answer", key=f"save_{q_id}", use_container_width=True):
                     if user_answer.strip():
                         st.session_state.interview_answers[str(
                             q_id)] = user_answer
@@ -1982,11 +1948,11 @@ def _render_interview_session(ai_handler: AIHandler, selected_model: str):
                             st.session_state.current_q_index = idx + 1
                         st.rerun()
                     else:
-                        st.warning("Please write an answer before saving.")
+                        st.warning("Write something first.")
             with btn_col2:
                 if is_answered and not has_feedback:
-                    if st.button(f"🤖 Evaluate This Answer", key=f"eval_{q_id}", use_container_width=True):
-                        with st.spinner("🧠 Evaluating your answer..."):
+                    if st.button(f"🤖 Evaluate this answer", key=f"eval_{q_id}", use_container_width=True):
+                        with st.spinner("🧠 Reading your answer…"):
                             fb = ai_handler.evaluate_interview_answer(
                                 q_text, answers.get(str(q_id), ""), ideal,
                                 role, q.get("companies", []), selected_model)
@@ -2056,13 +2022,13 @@ def _render_question_feedback(fb: Dict):
                     f'<div style="background:rgba(34,197,94,0.07);border-left:2px solid #22c55e;border-radius:6px;padding:8px 12px;margin-bottom:6px;color:#94a3b8;font-size:0.87rem;">{s}</div>', unsafe_allow_html=True)
     with fc2:
         if wrong:
-            st.markdown('<div style="color:#f59e0b;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">⚠️ WHAT WENT WRONG</div>', unsafe_allow_html=True)
+            st.markdown('<div style="color:#f59e0b;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">⚠️ WHAT MISSED</div>', unsafe_allow_html=True)
             for w in wrong:
                 st.markdown(
                     f'<div style="background:rgba(245,158,11,0.07);border-left:2px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:6px;color:#94a3b8;font-size:0.87rem;">{w}</div>', unsafe_allow_html=True)
 
     if how_fix:
-        st.markdown('<div style="color:#00d2ff;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:12px 0 6px 0;">🔧 HOW TO IMPROVE</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#00d2ff;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:12px 0 6px 0;">🔧 HOW TO DO BETTER</div>', unsafe_allow_html=True)
         for fix in how_fix:
             st.markdown(
                 f'<div style="background:rgba(0,210,255,0.06);border-left:2px solid #00d2ff;border-radius:6px;padding:8px 12px;margin-bottom:6px;color:#94a3b8;font-size:0.87rem;">{fix}</div>', unsafe_allow_html=True)
@@ -2083,7 +2049,7 @@ def _render_question_feedback(fb: Dict):
     if sample:
         st.markdown(f"""
         <div style="background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.25);border-radius:10px;padding:14px 16px;margin-top:10px;">
-          <div style="color:#a855f7;font-size:0.8rem;font-weight:700;letter-spacing:0.08em;margin-bottom:8px;">💎 MODEL ANSWER</div>
+          <div style="color:#a855f7;font-size:0.8rem;font-weight:700;letter-spacing:0.08em;margin-bottom:8px;">💎 A STRONGER ANSWER MIGHT SOUND LIKE</div>
           <div style="color:#cbd5e1;font-size:0.9rem;line-height:1.7;font-style:italic;">"{sample}"</div>
         </div>
         """, unsafe_allow_html=True)
@@ -2100,7 +2066,7 @@ def _render_final_verdict(ai_handler: AIHandler, selected_model: str,
         for q in questions:
             all_companies.extend(q.get("companies", []))
         all_companies = list(dict.fromkeys(all_companies))[:4]
-        with st.spinner("🧠 Generating your final verdict..."):
+        with st.spinner("🧠 Writing your final verdict…"):
             verdict_data = ai_handler.generate_final_verdict(
                 role, st.session_state.get('mi_level', 'Fresher'),
                 all_companies, list(feedback.values()), selected_model)
@@ -2153,11 +2119,11 @@ def _render_final_verdict(ai_handler: AIHandler, selected_model: str,
           {"" if ready else f'<div style="color:#f59e0b;font-size:0.75rem;margin-top:6px;">~{weeks} weeks prep needed</div>'}
         </div>
         <div style="flex:2;min-width:200px;background:rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 22px;display:flex;align-items:center;">
-          <div><div style="color:#e2e8f0;font-size:0.95rem;font-weight:600;line-height:1.5;margin-bottom:6px;">"{headline}"</div><div style="color:#64748b;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;">Overall Assessment</div></div>
+          <div><div style="color:#e2e8f0;font-size:0.95rem;font-weight:600;line-height:1.5;margin-bottom:6px;">"{headline}"</div><div style="color:#64748b;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;">The summary</div></div>
         </div>
       </div>
       <div style="background:{cc}08;border-left:4px solid {cc};border-radius:10px;padding:14px 18px;margin-bottom:22px;">
-        <div style="color:{cc};font-size:0.78rem;font-weight:700;letter-spacing:0.1em;margin-bottom:6px;">🏢 COMPANY VERDICT</div>
+        <div style="color:{cc};font-size:0.78rem;font-weight:700;letter-spacing:0.1em;margin-bottom:6px;">🏢 THE HONEST TAKE</div>
         <div style="color:#cbd5e1;font-size:0.92rem;line-height:1.7;">{crack_msg}</div>
       </div>
     </div>
@@ -2165,18 +2131,18 @@ def _render_final_verdict(ai_handler: AIHandler, selected_model: str,
 
     sv_col, wv_col = st.columns(2)
     with sv_col:
-        st.markdown('<div style="color:#22c55e;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">🌟 TOP STRENGTHS</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#22c55e;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">🌟 WHAT YOU DO WELL</div>', unsafe_allow_html=True)
         for s in strengths:
             st.markdown(
                 f'<div style="background:rgba(34,197,94,0.07);border-left:3px solid #22c55e;border-radius:8px;padding:10px 14px;margin-bottom:8px;color:#94a3b8;font-size:0.88rem;line-height:1.5;">{s}</div>', unsafe_allow_html=True)
     with wv_col:
-        st.markdown('<div style="color:#ef4444;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">⚠️ TOP WEAKNESSES</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#ef4444;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">⚠️ WHERE TO IMPROVE</div>', unsafe_allow_html=True)
         for w in weaknesses:
             st.markdown(
                 f'<div style="background:rgba(239,68,68,0.07);border-left:3px solid #ef4444;border-radius:8px;padding:10px 14px;margin-bottom:8px;color:#94a3b8;font-size:0.88rem;line-height:1.5;">{w}</div>', unsafe_allow_html=True)
 
     if action_plan:
-        st.markdown('<div style="color:#00d2ff;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">🎯 YOUR PRIORITY ACTION PLAN</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#00d2ff;font-weight:700;font-size:0.85rem;letter-spacing:0.05em;margin:16px 0 8px 0;">🎯 WHAT TO DO NEXT</div>', unsafe_allow_html=True)
         for i, step in enumerate(action_plan, 1):
             st.markdown(
                 f'<div style="display:flex;gap:12px;align-items:flex-start;background:rgba(0,210,255,0.05);border:1px solid rgba(0,210,255,0.12);border-radius:10px;padding:12px 16px;margin-bottom:8px;"><div style="background:rgba(0,210,255,0.15);color:#00d2ff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:900;flex-shrink:0;">{i}</div><div style="color:#cbd5e1;font-size:0.9rem;line-height:1.5;">{step}</div></div>', unsafe_allow_html=True)
@@ -2269,7 +2235,7 @@ def render_sidebar(config: Config) -> tuple[str, str, str, bool, bool]:
 
         st.divider()
 
-        with st.expander("🎛️ Advanced Options"):
+        with st.expander("🎛️ Advanced options"):
             analysis_depth = st.select_slider("Analysis Depth",
                                               options=["Quick", "Standard", "Deep"], value="Standard")
             include_learning_path = st.checkbox(
@@ -2277,15 +2243,15 @@ def render_sidebar(config: Config) -> tuple[str, str, str, bool, bool]:
             include_interview_prep = st.checkbox(
                 "Interview Preparation Tips", value=True)
 
-        with st.expander("🔒 Privacy & Data Notice", expanded=False):
+        with st.expander("🔒 What happens to your data", expanded=False):
             st.markdown("""
             <div style="font-family:'Space Grotesk',sans-serif;font-size:0.82rem;line-height:1.7;color:#94a3b8;">
             <div style="color:#00d2ff;font-weight:700;margin-bottom:8px;">What happens to your data</div>
-            Resume/profile text is sent to the AI provider you selected. It is <b>not stored by JobLess AI</b>.
-            API keys are held only in your browser session and cleared on tab close.
-            Session history is lost on page refresh.
+            Your resume text goes to the AI provider you picked. It doesn't get stored by this app.
+            API keys only live in your browser session and disappear when you close the tab.
+            History clears on refresh.
             <div style="margin-top:12px;padding:9px 13px;background:rgba(245,158,11,0.08);border-left:3px solid #f59e0b;border-radius:6px;color:#fbbf24;font-size:0.79rem;">
-                ⚠️ Avoid uploading resumes with sensitive identifiers beyond what you'd share with a recruiter.
+                ⚠️ Try not to include your Aadhaar number or bank details in the resume — just the professional stuff.
             </div>
             <div style="margin-top:12px;font-size:0.8rem;">
                 • <a href="https://ai.google.dev/gemini-api/terms" target="_blank" style="color:#7dd3fc;">Google Gemini API Terms</a><br>
@@ -2297,28 +2263,16 @@ def render_sidebar(config: Config) -> tuple[str, str, str, bool, bool]:
 
         st.divider()
 
-        uses = st.session_state.get('free_uses', 0)
-        own_key = config.using_own_key(selected_provider)
         if config.is_ready():
-            if own_key:
-                st.success(f"""
-                **✅ Your Key Active**
-                - Provider: {selected_provider.split()[0]}
-                - Unlimited use
-                """)
-            else:
-                remaining = max(0, 5 - uses)
-                bar = '█' * remaining + '░' * (5 - remaining)
-                st.success(f"""
-                **✅ Ready (Free Tier)**
-                - Provider: {selected_provider.split()[0]}
-                - Free uses left: {remaining}/5  {bar}
-                """)
-                if remaining <= 2:
-                    st.warning("🔑 Running low! Add your own key for unlimited use.")
+            st.success(f"""
+            **✅ Ready to Analyze**
+            - Provider: {selected_provider.split()[0]}
+            - Model: {selected_model}
+            - History: {len(st.session_state.history)} records
+            """)
         else:
             st.error(
-                f"**⚠️ {selected_provider} Key Required**\nPaste your key above to start")
+                f"**⚠️ {selected_provider} Key Required**\nPaste it above to start")
 
     return selected_provider, selected_model, analysis_depth, include_learning_path, include_interview_prep
 
@@ -2339,7 +2293,6 @@ def init_session_state():
         'interview_started': False,
         'current_q_index': 0,
         'final_verdict': None,
-        'free_uses': 0,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -2376,7 +2329,7 @@ def main():
     if not config.is_ready():
         ui.show_api_setup_banner()
         st.info(
-            "👈 **Next Step:** Enter your API key in the sidebar to start analyzing careers!")
+            "👈 **Next step:** Paste your API key in the sidebar to get started.")
         st.stop()
 
     # ── Tabs ──────────────────────────────────────────────────────────────
@@ -2408,10 +2361,10 @@ def main():
     # Footer
     st.markdown(f"""
         <div style="text-align:center;padding:20px;color:#94a3b8;">
-            © {datetime.date.today().year} JobLess AI | Created by Anubhab Mondal
+            © {datetime.date.today().year} JobLess AI | Built by Anubhab Mondal
             <br>
             <span style="font-size:0.77rem;color:#475569;">
-                Your resume data is processed by your chosen AI provider and is
+                Your data goes to your chosen AI provider and is
                 <strong>not stored</strong> by this app.
             </span>
         </div>

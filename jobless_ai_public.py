@@ -1098,6 +1098,10 @@ class UIComponents:
                 try {
                     var P = window.parent, pdoc = P.document;
                     if (!pdoc || !pdoc.body) { setTimeout(init, 80); return; }
+                    /* Reset the running flag if canvas was removed (Streamlit rerun wipes DOM) */
+                    if (P.__nexstepRunning && !pdoc.getElementById('ns-canvas')) {
+                        P.__nexstepRunning = false;
+                    }
                     if (P.__nexstepRunning) return;
                     P.__nexstepRunning = true;
                     if (!pdoc.getElementById('nexstep-injected-css')) {
@@ -1141,7 +1145,7 @@ class UIComponents:
         })();
         </script>
         """
-        components.html(particle_js, height=0, scrolling=False)
+        components.html(particle_js, height=1, scrolling=False)
 
     @staticmethod
     def show_api_setup_banner():

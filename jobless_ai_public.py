@@ -93,7 +93,7 @@ _HEADER_HTML = """<!DOCTYPE html>
 <title>JobLess AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400&display=swap" rel="stylesheet">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
+* { margin:0; padding:0; box-sizing:border-box; cursor: none !important; }
 
 /* FIX 1: overflow:hidden on body kills 3D transforms on iOS Safari.
    Use overflow:clip instead — it clips visually without creating a
@@ -282,7 +282,35 @@ body {
 <script>
 (function(){
   var fe = window.frameElement;
-  if(fe){ fe.style.cssText += 'border:none!important;outline:none!important;box-shadow:none!important;background:transparent!important;'; }
+  if(fe){ fe.style.cssText += 'border:none!important;outline:none!important;box-shadow:none!important;background:#060b14!important;'; }
+})();
+</script>
+
+<script>
+/* Enforce cursor:none + forward mouse events from header iframe to parent */
+(function() {
+  /* 1. Hide the cursor inside this iframe - prevents flash back to default */
+  var s = document.createElement('style');
+  s.textContent = '* { cursor: none !important; }';
+  document.head.appendChild(s);
+
+  /* 2. Forward mouse events to parent so the custom cursor tracks correctly */
+  function forwardMouse(e) {
+    try {
+      var fe = window.frameElement;
+      if (!fe) return;
+      var rect = fe.getBoundingClientRect();
+      var synth = new window.parent.MouseEvent(e.type, {
+        clientX: e.clientX + rect.left,
+        clientY: e.clientY + rect.top,
+        bubbles: true, cancelable: false
+      });
+      window.parent.document.dispatchEvent(synth);
+    } catch(err) {}
+  }
+  ['mousemove','mouseover','mouseout','mousedown','mouseup'].forEach(function(ev) {
+    document.addEventListener(ev, forwardMouse, { passive: true });
+  });
 })();
 </script>
 
@@ -603,19 +631,13 @@ class AIHandler:
             if not _GEMINI_OK:
                 raise RuntimeError("Run: pip install google-generativeai")
             genai.configure(api_key=api_key)
-            # response_mime_type requires google-generativeai >= 0.4.0
-            # Fallback gracefully for older installs
-            try:
-                gen_config = genai.GenerationConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=temperature,
-                    **({"response_mime_type": "application/json"} if json_mode else {})
-                )
-            except TypeError:
-                gen_config = genai.GenerationConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=temperature,
-                )
+            gen_config = genai.GenerationConfig(
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+                # Native JSON mode: Gemini guarantees a parseable JSON response,
+                # eliminating the need for markdown-fence stripping heuristics.
+                **({"response_mime_type": "application/json"} if json_mode else {})
+            )
             model = genai.GenerativeModel(
                 model_name, generation_config=gen_config)
             response = model.generate_content(prompt)

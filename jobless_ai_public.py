@@ -3737,10 +3737,20 @@ def main():
     )
 
     # ── Routing: show landing page unless ?page=app is in the URL ──────────
-    page = st.query_params.get("page", "landing")
-    if page != "app":
+    try:
+        params = st.query_params  # Streamlit >= 1.30
+        show_app = params.get("page", "") == "app"
+    except Exception:
+        try:
+            params = st.experimental_get_query_params()
+            show_app = params.get("page", [""])[0] == "app"
+        except Exception:
+            show_app = False
+
+    if not show_app:
         _show_landing_page()
         st.stop()
+
 
     # ── App mode ────────────────────────────────────────────────────────────
     init_session_state()

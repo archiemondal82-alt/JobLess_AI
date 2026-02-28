@@ -4971,7 +4971,7 @@ _LANDING_PAGE_HTML = """
       <li><a href="#testimonials">Reviews</a></li>
       <li><a href="#faq">FAQ</a></li>
     </ul>
-    <a href="?page=app" class="nav-cta">Launch App →</a>
+    <a href="?page=app" target="_top" class="nav-cta">Launch App →</a>
   </nav>
 
   <!-- HERO -->
@@ -4992,7 +4992,7 @@ _LANDING_PAGE_HTML = """
           — powered by cutting-edge AI. Free forever.
         </p>
         <div class="hero-actions">
-          <a href="?page=app" class="btn-primary">Start Free Now →</a>
+          <a href="?page=app" target="_top" class="btn-primary">Start Free Now →</a>
           <a href="#features" class="btn-ghost">Explore Features</a>
         </div>
       </div>
@@ -5451,7 +5451,7 @@ _LANDING_PAGE_HTML = """
     <p
       style="font-size: 15px; color: rgba(0,0,0,0.55); max-width: 420px; margin: 0 auto 40px; line-height: 1.7; font-weight: 300;">
       Your resume. Your career. Your AI. Free forever at joblessai.streamlit.app</p>
-    <a href="?page=app"
+    <a href="?page=app" target="_top"
       style="display: inline-block; background: var(--black); color: var(--white); font-weight: 700; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; padding: 20px 52px; text-decoration: none; transition: opacity 0.2s;"
       onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
       OPEN JOBLESS AI →
@@ -5595,68 +5595,48 @@ def _show_landing_page():
     html_content = _LANDING_PAGE_HTML
 
     # ── 2. Build the navigation + resize script to inject ────────────────────
-    # ── Navigation: directly navigate window.parent (same-origin on Streamlit Cloud)
-    # Drop the postMessage/parent_script approach entirely — it breaks cross-origin.
-    # components.html iframes have allow-same-origin so window.parent.location works.
-    inject_script = """
-    <script>
-    (function() {
-        function isAppLink(el) {
-            var a = el.closest ? el.closest('a') : null;
-            if (!a) return null;
-            var href = a.getAttribute('href') || '';
-            return (href === '?page=app' || href.endsWith('?page=app')) ? a : null;
-        }
+    # Because Streamlit iframes are sandboxed, window.top.location is blocked.
+    # Instead we use postMessage to communicate with the parent, and a tiny
+    # <script> in the parent (injected via st.markdown) listens and sets
+    # window.location.search = "?page=app" on the top frame.
+    #
+    # We also make all internal anchor links (e.g. #features) use
+    # document-level scroll so the page behaves correctly inside the iframe.
+    # Navigation handled by target='_top' on all ?page=app links — no JS needed.
 
-        document.addEventListener('click', function(e) {
-            var a = isAppLink(e.target);
-            if (a) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                // Try every level of parent until we can set location
-                var wins = [window.parent, window.top, window];
-                for (var i = 0; i < wins.length; i++) {
-                    try {
-                        var cur = wins[i].location.href;
-                        var url = new URL(cur);
-                        url.searchParams.set('page', 'app');
-                        wins[i].location.href = url.toString();
-                        return;
-                    } catch(err) { /* cross-origin, try next */ }
-                }
-                // Last resort: postMessage up the chain
-                window.parent.postMessage({ type: 'JOBLESS_NAV', page: 'app' }, '*');
-                window.top.postMessage({ type: 'JOBLESS_NAV', page: 'app' }, '*');
-            }
-        }, true);
-
-        // Also listen for postMessage at every level as ultimate fallback
-        window.addEventListener('message', function(e) {
-            if (e.data && e.data.type === 'JOBLESS_NAV' && e.data.page === 'app') {
-                try {
-                    var url = new URL(window.location.href);
-                    url.searchParams.set('page', 'app');
-                    window.location.href = url.toString();
-                } catch(err) {}
-            }
-        });
-    })();
-    </script>
-    """
-
+    # ── 5. CSS patch: fix hero layout collapse inside iframe ──────────────────
+    # Problems inside Streamlit's sandboxed iframe:
+    #
+    # A) `min-height: 100vh` on #hero = only the iframe's tiny internal height,
+    #    so the black background fills the iframe but content collapses.
+    #
+    # B) `.hero-inner { flex: 1 }` collapses to 0 height when the parent #hero
+    #    has no explicit height (flex children need a sized parent to stretch).
+    #
+    # C) `position: fixed` on nav is relative to the iframe viewport, not the
+    #    browser window, so it overlaps content correctly but needs no change.
+    #
+    # Fix: give #hero an explicit large min-height, make .hero-inner use
+    # min-height instead of flex:1, and ensure body/html don't clip content.
     css_patch = """
     <style>
+        /* ── IFRAME COMPATIBILITY FIXES ── */
+
         html, body {
             height: auto !important;
             min-height: 100% !important;
             overflow-x: hidden !important;
         }
+
+        /* Fix A+B: hero flex collapse.
+           Use min-height instead of relying on flex:1 from a 100vh parent. */
         #hero {
             min-height: 820px !important;
             height: auto !important;
             display: flex !important;
             flex-direction: column !important;
         }
+
         .hero-inner {
             flex: unset !important;
             display: flex !important;
@@ -5666,13 +5646,24 @@ def _show_landing_page():
             min-height: 700px !important;
             gap: 0 !important;
         }
-        .hero-left, .hero-right { flex: 1 !important; }
+
+        /* Ensure hero-left and hero-right take space */
+        .hero-left, .hero-right {
+            flex: 1 !important;
+        }
+
+        /* Fix nav link href (remove javascript:void status bar flash) */
+        a[href="javascript:void(0)"] {
+            cursor: pointer !important;
+        }
     </style>
     """
 
+    # Inject CSS fix into <head> only — navigation uses target="_top", no JS needed
     html_with_script = html_content.replace("</head>", css_patch + "\n</head>")
-    html_with_script = html_with_script.replace("</body>", inject_script + "\n</body>")
 
+    # ── 4. Render — use a very large height so all sections are reachable ────
+    # scrolling=True is critical: it lets the user scroll the landing page.
     components.html(html_with_script, height=8000, scrolling=True)
 
 

@@ -1,8 +1,3 @@
-"""
-JobLess AI - Public Version (Users Bring Their Own API Key)
-Enhanced version with clear API key instructions
-Refactored: each tab is its own render_tab_*() function.
-"""
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -31,17 +26,43 @@ import streamlit as st
 import streamlit.components.v1 as components
 import os
 
-# Landing page routing
 params = st.query_params
+
 if params.get("page") != "app":
     st.set_page_config(
-        layout="wide", page_title="JobLess AI — AI Career Intelligence")
+        layout="wide",
+        page_title="JobLess AI — AI Career Intelligence",
+        initial_sidebar_state="collapsed"
+    )
+
+    # Hide ALL Streamlit UI chrome so only the landing page shows
+    st.markdown("""
+        <style>
+            header[data-testid="stHeader"] { display: none !important; }
+            footer { display: none !important; }
+            #MainMenu { display: none !important; }
+            section[data-testid="stSidebar"] { display: none !important; }
+            button[data-testid="collapsedControl"] { display: none !important; }
+            .stDeployButton { display: none !important; }
+            .stApp { margin: 0 !important; padding: 0 !important; }
+            .block-container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            div[data-testid="stVerticalBlock"] { gap: 0 !important; padding: 0 !important; }
+            iframe { display: block; border: none; }
+        </style>
+    """, unsafe_allow_html=True)
+
     landing_path = os.path.join(os.path.dirname(
         __file__), "jobless_ai_landing.html")
     with open(landing_path, "r", encoding="utf-8") as f:
         html_content = f.read()
-    components.html(html_content, height=9000, scrolling=True)
+
+    components.html(html_content, height=9500, scrolling=True)
     st.stop()
+"""
+JobLess AI - Public Version (Users Bring Their Own API Key)
+Enhanced version with clear API key instructions
+Refactored: each tab is its own render_tab_*() function.
+"""
 
 
 # ── Provider SDK imports (graceful fallback if not installed) ──────────────

@@ -1129,7 +1129,6 @@ def get_job_links(title: str, location: str, keywords: str = "") -> dict:
     query = keywords if keywords else title
     q_enc = query.replace(" ", "+")
     title_enc = title.replace(" ", "+")
-
     naukri_slug = title.lower().replace(" ", "-")
     is_india = "india" in location.lower() or location.lower() in (
         "india - metro", "india - remote", "india - tier 2")

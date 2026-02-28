@@ -1185,8 +1185,8 @@
 
     /* ── ANIMATIONS ── */
     .fade-up {
-      opacity: 0;
-      transform: translateY(30px);
+      opacity: 1;
+      transform: translateY(0);
       transition: opacity 0.7s ease, transform 0.7s ease;
     }
 
@@ -1301,7 +1301,7 @@
       <li><a href="#testimonials">Reviews</a></li>
       <li><a href="#faq">FAQ</a></li>
     </ul>
-    <a href="?page=app" class="nav-cta">Launch App →</a>
+    <a href="#" onclick="window.top.location.href=window.top.location.pathname+'?page=app'; return false;" class="nav-cta">Launch App →</a>
   </nav>
 
   <!-- HERO -->
@@ -1322,7 +1322,7 @@
           — powered by cutting-edge AI. Free forever.
         </p>
         <div class="hero-actions">
-          <a href="?page=app" class="btn-primary">Start Free Now →</a>
+          <a href="#" onclick="window.top.location.href=window.top.location.pathname+'?page=app'; return false;" class="btn-primary">Start Free Now →</a>
           <a href="#features" class="btn-ghost">Explore Features</a>
         </div>
       </div>
@@ -1781,7 +1781,7 @@
     <p
       style="font-size: 15px; color: rgba(0,0,0,0.55); max-width: 420px; margin: 0 auto 40px; line-height: 1.7; font-weight: 300;">
       Your resume. Your career. Your AI. Free forever at joblessai.streamlit.app</p>
-    <a href="?page=app"
+    <a href="#" onclick="window.top.location.href=window.top.location.pathname+'?page=app'; return false;"
       style="display: inline-block; background: var(--black); color: var(--white); font-weight: 700; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; padding: 20px 52px; text-decoration: none; transition: opacity 0.2s;"
       onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
       OPEN JOBLESS AI →

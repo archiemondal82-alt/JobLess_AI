@@ -3678,7 +3678,9 @@ def _load_landing_page() -> str:
 
 
 def _show_landing_page():
-    """Render the full-page landing experience inside Streamlit."""
+    """Inject the landing page HTML directly into Streamlit (no iframe)."""
+
+    # 1. Hide all Streamlit chrome
     st.markdown("""
         <style>
             header[data-testid="stHeader"],
@@ -3686,41 +3688,44 @@ def _show_landing_page():
             #MainMenu,
             [data-testid="collapsedControl"],
             [data-testid="stToolbar"] { display: none !important; }
-
-            .main > div:first-child { padding: 0 !important; }
-            .block-container { padding: 0 !important; max-width: 100% !important; }
+            .block-container { padding: 0 !important; max-width: 100vw !important; }
             [data-testid="stAppViewContainer"] > section.main { padding: 0 !important; }
-            iframe { width: 100% !important; border: none !important; }
+            .main > div { padding: 0 !important; }
         </style>
     """, unsafe_allow_html=True)
 
+    # 2. Load the HTML file
     html_content = _load_landing_page()
 
-    inject_script = """
+    # 3. Patch CTA links: replace ?page=app hrefs with a JS call that
+    #    sets window.location so Streamlit's query param routing picks it up.
+    #    We do this by injecting a tiny script + converting the links to onclick.
+    patch_script = """
     <script>
     (function() {
-        function init() {
+        function patchLinks() {
             document.querySelectorAll('a[href="?page=app"]').forEach(function(a) {
+                a.setAttribute('href', '#');
                 a.addEventListener('click', function(e) {
                     e.preventDefault();
-                    window.top.location.href = window.top.location.pathname + '?page=app';
+                    window.location.href = window.location.pathname + '?page=app';
                 });
             });
         }
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
+            document.addEventListener('DOMContentLoaded', patchLinks);
         } else {
-            init();
+            patchLinks();
         }
     })();
     </script>
     """
 
-    html_patched = html_content.replace("</body>", inject_script + "\n</body>")
-
-    # scrolling=True: iframe acts like a real browser window.
-    # height=870 fills the viewport; position:fixed nav works correctly inside.
-    components.html(html_patched, height=870, scrolling=True)
+    # 4. Inject patch script and render via components.html
+    #    scrolling=True + large height = the iframe scrolls like a normal page.
+    #    This is the most reliable approach for full-page HTML in Streamlit.
+    html_patched = html_content.replace("</body>", patch_script + "\n</body>")
+    components.html(html_patched, height=900, scrolling=True)
 
 
 def main():

@@ -4971,7 +4971,7 @@ _LANDING_PAGE_HTML = """
       <li><a href="#testimonials">Reviews</a></li>
       <li><a href="#faq">FAQ</a></li>
     </ul>
-    <a href="?page=app" target="_top" class="nav-cta">Launch App →</a>
+    <a href="?page=app" class="nav-cta">Launch App →</a>
   </nav>
 
   <!-- HERO -->
@@ -4992,7 +4992,7 @@ _LANDING_PAGE_HTML = """
           — powered by cutting-edge AI. Free forever.
         </p>
         <div class="hero-actions">
-          <a href="?page=app" target="_top" class="btn-primary">Start Free Now →</a>
+          <a href="?page=app" class="btn-primary">Start Free Now →</a>
           <a href="#features" class="btn-ghost">Explore Features</a>
         </div>
       </div>
@@ -5451,7 +5451,7 @@ _LANDING_PAGE_HTML = """
     <p
       style="font-size: 15px; color: rgba(0,0,0,0.55); max-width: 420px; margin: 0 auto 40px; line-height: 1.7; font-weight: 300;">
       Your resume. Your career. Your AI. Free forever at joblessai.streamlit.app</p>
-    <a href="?page=app" target="_top"
+    <a href="?page=app"
       style="display: inline-block; background: var(--black); color: var(--white); font-weight: 700; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; padding: 20px 52px; text-decoration: none; transition: opacity 0.2s;"
       onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
       OPEN JOBLESS AI →
@@ -5554,118 +5554,61 @@ def _load_landing_page() -> str:
 def _show_landing_page():
     """Render the full-page landing experience inside Streamlit."""
 
-    # ── 1. Aggressively hide ALL Streamlit chrome and remove all padding ──────
+    # Hide all Streamlit chrome
     st.markdown("""
         <style>
             header[data-testid="stHeader"],
-            footer,
-            #MainMenu,
+            footer, #MainMenu,
             [data-testid="collapsedControl"],
             [data-testid="stToolbar"],
             [data-testid="stDecoration"],
             [data-testid="stStatusWidget"] { display: none !important; }
-
-            /* Kill every layer of padding Streamlit adds */
-            html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+            html, body { margin: 0 !important; padding: 0 !important; }
             .main, .block-container,
             [data-testid="stAppViewContainer"],
             [data-testid="stAppViewContainer"] > section.main,
             [data-testid="stVerticalBlock"],
             [data-testid="stVerticalBlockBorderWrapper"],
             div[data-testid="stMainBlockContainer"] {
-                padding: 0 !important;
-                margin: 0 !important;
-                max-width: 100% !important;
+                padding: 0 !important; margin: 0 !important; max-width: 100% !important;
             }
-
-            /* Make the iframe fill the full viewport */
-            iframe {
-                display: block !important;
-                width: 100vw !important;
-                height: 100vh !important;
-                border: none !important;
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                z-index: 9999 !important;
-            }
+            iframe { border: none !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    html_content = _LANDING_PAGE_HTML
-
-    # ── 2. Build the navigation + resize script to inject ────────────────────
-    # Because Streamlit iframes are sandboxed, window.top.location is blocked.
-    # Instead we use postMessage to communicate with the parent, and a tiny
-    # <script> in the parent (injected via st.markdown) listens and sets
-    # window.location.search = "?page=app" on the top frame.
-    #
-    # We also make all internal anchor links (e.g. #features) use
-    # document-level scroll so the page behaves correctly inside the iframe.
-    # Navigation handled by target='_top' on all ?page=app links — no JS needed.
-
-    # ── 5. CSS patch: fix hero layout collapse inside iframe ──────────────────
-    # Problems inside Streamlit's sandboxed iframe:
-    #
-    # A) `min-height: 100vh` on #hero = only the iframe's tiny internal height,
-    #    so the black background fills the iframe but content collapses.
-    #
-    # B) `.hero-inner { flex: 1 }` collapses to 0 height when the parent #hero
-    #    has no explicit height (flex children need a sized parent to stretch).
-    #
-    # C) `position: fixed` on nav is relative to the iframe viewport, not the
-    #    browser window, so it overlaps content correctly but needs no change.
-    #
-    # Fix: give #hero an explicit large min-height, make .hero-inner use
-    # min-height instead of flex:1, and ensure body/html don't clip content.
+    # ── CSS fixes for iframe rendering ───────────────────────────────────────
     css_patch = """
     <style>
-        /* ── IFRAME COMPATIBILITY FIXES ── */
-
-        html, body {
-            height: auto !important;
-            min-height: 100% !important;
-            overflow-x: hidden !important;
-        }
-
-        /* Fix A+B: hero flex collapse.
-           Use min-height instead of relying on flex:1 from a 100vh parent. */
-        #hero {
-            min-height: 820px !important;
-            height: auto !important;
-            display: flex !important;
-            flex-direction: column !important;
-        }
-
-        .hero-inner {
-            flex: unset !important;
-            display: flex !important;
-            align-items: center !important;
-            padding-top: 100px !important;
-            padding-bottom: 60px !important;
-            min-height: 700px !important;
-            gap: 0 !important;
-        }
-
-        /* Ensure hero-left and hero-right take space */
-        .hero-left, .hero-right {
-            flex: 1 !important;
-        }
-
-        /* Fix nav link href (remove javascript:void status bar flash) */
-        a[href="javascript:void(0)"] {
-            cursor: pointer !important;
-        }
+        html, body { height: auto !important; min-height: 100% !important; overflow-x: hidden !important; }
+        #hero { min-height: 820px !important; height: auto !important; display: flex !important; flex-direction: column !important; }
+        .hero-inner { flex: unset !important; display: flex !important; align-items: center !important; padding-top: 100px !important; padding-bottom: 60px !important; min-height: 700px !important; }
+        .hero-left, .hero-right { flex: 1 !important; }
     </style>
     """
 
-    # Inject CSS fix into <head> only — navigation uses target="_top", no JS needed
-    html_with_script = html_content.replace("</head>", css_patch + "\n</head>")
+    # ── All ?page=app links get target="_top" ─────────────────────────────────
+    html_content = _LANDING_PAGE_HTML.replace(
+        'href="?page=app"', 'href="?page=app" target="_top"'
+    )
 
-    # ── 4. Render — use a very large height so all sections are reachable ────
-    # scrolling=True is critical: it lets the user scroll the landing page.
-    components.html(html_with_script, height=8000, scrolling=True)
+    # Inject css_patch into <head>
+    html_final = html_content.replace("</head>", css_patch + "\n</head>")
 
+    # ── KEY FIX: render via st.markdown <iframe> with allow-top-navigation ───
+    # components.html() sandbox lacks allow-top-navigation-by-user-activation,
+    # silently blocking target="_top" clicks. A st.markdown iframe lets us set
+    # the sandbox manually so target="_top" actually works.
+    import html as _html_lib
+    srcdoc = _html_lib.escape(html_final, quote=True)
+
+    st.markdown(
+        f'''<iframe
+            srcdoc="{srcdoc}"
+            sandbox="allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-forms allow-popups"
+            style="width:100%;height:9000px;border:none;display:block;"
+        ></iframe>''',
+        unsafe_allow_html=True,
+    )
 
 def main():
     st.set_page_config(

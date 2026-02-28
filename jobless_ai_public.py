@@ -5552,17 +5552,17 @@ def _load_landing_page() -> str:
 
 
 def _show_landing_page():
-    """Render the full-page landing experience inside Streamlit."""
+    """Render the landing page. Uses base64 data-URI iframe to avoid
+    escaping issues, with allow-top-navigation-by-user-activation so
+    target="_top" links actually work on Streamlit Cloud."""
 
-    # Hide all Streamlit chrome
+    # ── Hide all Streamlit chrome ─────────────────────────────────────────
     st.markdown("""
         <style>
-            header[data-testid="stHeader"],
-            footer, #MainMenu,
-            [data-testid="collapsedControl"],
-            [data-testid="stToolbar"],
-            [data-testid="stDecoration"],
-            [data-testid="stStatusWidget"] { display: none !important; }
+            header[data-testid="stHeader"], footer, #MainMenu,
+            [data-testid="collapsedControl"], [data-testid="stToolbar"],
+            [data-testid="stDecoration"], [data-testid="stStatusWidget"]
+            { display: none !important; }
             html, body { margin: 0 !important; padding: 0 !important; }
             .main, .block-container,
             [data-testid="stAppViewContainer"],
@@ -5570,43 +5570,48 @@ def _show_landing_page():
             [data-testid="stVerticalBlock"],
             [data-testid="stVerticalBlockBorderWrapper"],
             div[data-testid="stMainBlockContainer"] {
-                padding: 0 !important; margin: 0 !important; max-width: 100% !important;
+                padding: 0 !important; margin: 0 !important;
+                max-width: 100% !important;
             }
             iframe { border: none !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    # ── CSS fixes for iframe rendering ───────────────────────────────────────
-    css_patch = """
-    <style>
-        html, body { height: auto !important; min-height: 100% !important; overflow-x: hidden !important; }
-        #hero { min-height: 820px !important; height: auto !important; display: flex !important; flex-direction: column !important; }
-        .hero-inner { flex: unset !important; display: flex !important; align-items: center !important; padding-top: 100px !important; padding-bottom: 60px !important; min-height: 700px !important; }
-        .hero-left, .hero-right { flex: 1 !important; }
-    </style>
-    """
-
-    # ── All ?page=app links get target="_top" ─────────────────────────────────
+    # ── Prepare HTML ──────────────────────────────────────────────────────
+    # 1. Add target="_top" to every ?page=app link so browser navigates
+    #    the top-level Streamlit page (requires allow-top-navigation below)
     html_content = _LANDING_PAGE_HTML.replace(
         'href="?page=app"', 'href="?page=app" target="_top"'
     )
 
-    # Inject css_patch into <head>
+    # 2. Inject CSS fixes for iframe rendering
+    css_patch = """<style>
+        html, body { height: auto !important; min-height: 100% !important;
+                     overflow-x: hidden !important; }
+        #hero { min-height: 820px !important; height: auto !important;
+                display: flex !important; flex-direction: column !important; }
+        .hero-inner { flex: unset !important; display: flex !important;
+                      align-items: center !important; padding-top: 100px !important;
+                      padding-bottom: 60px !important; min-height: 700px !important; }
+        .hero-left, .hero-right { flex: 1 !important; }
+    </style>"""
     html_final = html_content.replace("</head>", css_patch + "\n</head>")
 
-    # ── KEY FIX: render via st.markdown <iframe> with allow-top-navigation ───
-    # components.html() sandbox lacks allow-top-navigation-by-user-activation,
-    # silently blocking target="_top" clicks. A st.markdown iframe lets us set
-    # the sandbox manually so target="_top" actually works.
-    import html as _html_lib
-    srcdoc = _html_lib.escape(html_final, quote=True)
+    # ── Encode as base64 data-URI — zero escaping issues ─────────────────
+    import base64 as _b64
+    encoded = _b64.b64encode(html_final.encode("utf-8")).decode("ascii")
+    data_uri = f"data:text/html;base64,{encoded}"
 
+    # ── Render via st.markdown iframe with proper sandbox ────────────────
+    # sandbox MUST include allow-top-navigation-by-user-activation for
+    # target="_top" clicks to work. components.html() does NOT include it,
+    # which is why every previous approach silently failed.
     st.markdown(
-        f'''<iframe
-            srcdoc="{srcdoc}"
-            sandbox="allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-forms allow-popups"
-            style="width:100%;height:9000px;border:none;display:block;"
-        ></iframe>''',
+        f'<iframe src="{data_uri}"'
+        f' sandbox="allow-scripts allow-top-navigation-by-user-activation'
+        f' allow-forms allow-popups"'
+        f' style="width:100%;height:9000px;border:none;display:block;">'
+        f'</iframe>',
         unsafe_allow_html=True,
     )
 

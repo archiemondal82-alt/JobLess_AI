@@ -3678,54 +3678,54 @@ def _load_landing_page() -> str:
 
 
 def _show_landing_page():
-    """Inject the landing page HTML directly into Streamlit (no iframe)."""
+    """Render landing page by injecting it as a full-screen overlay in the Streamlit DOM."""
 
-    # 1. Hide all Streamlit chrome
+    import re
+
+    html_content = _load_landing_page()
+
+    # Extract body content
+    body_match = re.search(r'<body[^>]*>(.*)</body>', html_content, re.DOTALL)
+    body_html = body_match.group(1) if body_match else html_content
+
+    # Extract head styles, links, scripts
+    head_match = re.search(r'<head[^>]*>(.*?)</head>', html_content, re.DOTALL)
+    head_html = head_match.group(1) if head_match else ""
+
+    # Patch CTA links to navigate Streamlit parent
+    onclick = "window.location.href='?page=app'; return false;"
+    body_html = body_html.replace('href="?page=app"', f'href="#" onclick="{onclick}"')
+
+    combined = f"""
+    {head_html}
+    <style>
+    #__landing_root__ {{
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        z-index: 99999;
+        background: #0a0a0a;
+    }}
+    </style>
+    <div id="__landing_root__">
+    {body_html}
+    </div>
+    """
+
+    # Hide all Streamlit chrome
     st.markdown("""
         <style>
-            header[data-testid="stHeader"],
-            footer,
-            #MainMenu,
-            [data-testid="collapsedControl"],
-            [data-testid="stToolbar"] { display: none !important; }
-            .block-container { padding: 0 !important; max-width: 100vw !important; }
-            [data-testid="stAppViewContainer"] > section.main { padding: 0 !important; }
-            .main > div { padding: 0 !important; }
+            header, footer, #MainMenu,
+            [data-testid="stHeader"],
+            [data-testid="stToolbar"],
+            [data-testid="collapsedControl"] { display: none !important; }
+            body, .main { overflow: hidden !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    # 2. Load the HTML file
-    html_content = _load_landing_page()
-
-    # 3. Patch CTA links: replace ?page=app hrefs with a JS call that
-    #    sets window.location so Streamlit's query param routing picks it up.
-    #    We do this by injecting a tiny script + converting the links to onclick.
-    patch_script = """
-    <script>
-    (function() {
-        function patchLinks() {
-            document.querySelectorAll('a[href="?page=app"]').forEach(function(a) {
-                a.setAttribute('href', '#');
-                a.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    window.location.href = window.location.pathname + '?page=app';
-                });
-            });
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', patchLinks);
-        } else {
-            patchLinks();
-        }
-    })();
-    </script>
-    """
-
-    # 4. Inject patch script and render via components.html
-    #    scrolling=True + large height = the iframe scrolls like a normal page.
-    #    This is the most reliable approach for full-page HTML in Streamlit.
-    html_patched = html_content.replace("</body>", patch_script + "\n</body>")
-    components.html(html_patched, height=900, scrolling=True)
+    st.markdown(combined, unsafe_allow_html=True)
 
 
 def main():

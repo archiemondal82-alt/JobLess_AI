@@ -3666,6 +3666,7 @@ def _build_ai_pyq_pdf(company: str, role: str, sections: list) -> bytes:
 
 # ==================== MAIN ====================
 
+
 _LANDING_PAGE_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -5545,8 +5546,6 @@ _LANDING_PAGE_HTML = """
 """
 
 
-
-
 def _load_landing_page() -> str:
     """Return the embedded landing page HTML."""
     return _LANDING_PAGE_HTML
@@ -5672,24 +5671,25 @@ def _show_landing_page():
     </script>
     """
 
-    # Inject the parent-side script into the Streamlit page DOM
-    st.markdown(parent_script, unsafe_allow_html=True)
+   # Inject the parent-side script via components.html (st.markdown strips <script> tags)
+    components.html(parent_script, height=0, scrolling=False)
 
-    # ── 5. CSS patch: fix hero layout collapse inside iframe ──────────────────
-    # Problems inside Streamlit's sandboxed iframe:
-    #
-    # A) `min-height: 100vh` on #hero = only the iframe's tiny internal height,
-    #    so the black background fills the iframe but content collapses.
-    #
-    # B) `.hero-inner { flex: 1 }` collapses to 0 height when the parent #hero
-    #    has no explicit height (flex children need a sized parent to stretch).
-    #
-    # C) `position: fixed` on nav is relative to the iframe viewport, not the
-    #    browser window, so it overlaps content correctly but needs no change.
-    #
-    # Fix: give #hero an explicit large min-height, make .hero-inner use
-    # min-height instead of flex:1, and ensure body/html don't clip content.
-    css_patch = """
+
+# ── 5. CSS patch: fix hero layout collapse inside iframe ──────────────────
+# Problems inside Streamlit's sandboxed iframe:
+#
+# A) `min-height: 100vh` on #hero = only the iframe's tiny internal height,
+#    so the black background fills the iframe but content collapses.
+#
+# B) `.hero-inner { flex: 1 }` collapses to 0 height when the parent #hero
+#    has no explicit height (flex children need a sized parent to stretch).
+#
+# C) `position: fixed` on nav is relative to the iframe viewport, not the
+#    browser window, so it overlaps content correctly but needs no change.
+#
+# Fix: give #hero an explicit large min-height, make .hero-inner use
+# min-height instead of flex:1, and ensure body/html don't clip content.
+css_patch = """
     <style>
         /* ── IFRAME COMPATIBILITY FIXES ── */
 
@@ -5730,13 +5730,14 @@ def _show_landing_page():
     </style>
     """
 
-    # Inject CSS fix into <head>, nav script before </body>
-    html_with_script = html_content.replace("</head>", css_patch + "\n</head>")
-    html_with_script = html_with_script.replace("</body>", inject_script + "\n</body>")
+# Inject CSS fix into <head>, nav script before </body>
+html_with_script = html_content.replace("</head>", css_patch + "\n</head>")
+html_with_script = html_with_script.replace(
+    "</body>", inject_script + "\n</body>")
 
-    # ── 4. Render — use a very large height so all sections are reachable ────
-    # scrolling=True is critical: it lets the user scroll the landing page.
-    components.html(html_with_script, height=8000, scrolling=True)
+# ── 4. Render — use a very large height so all sections are reachable ────
+# scrolling=True is critical: it lets the user scroll the landing page.
+components.html(html_with_script, height=8000, scrolling=True)
 
 
 def main():

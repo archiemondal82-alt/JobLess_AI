@@ -32,53 +32,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
-# ══════════════════════════════════════════════════════════════
-# LANDING PAGE ROUTING
-# ══════════════════════════════════════════════════════════════
-_params = st.query_params
-
-if _params.get("page") != "app":
-    st.set_page_config(
-        page_title="JobLess AI — AI Career Intelligence",
-        page_icon="🚀",
-        layout="wide",
-        initial_sidebar_state="collapsed",
-    )
-    st.markdown("""
-        <style>
-            header[data-testid="stHeader"] { display: none !important; }
-            footer { display: none !important; }
-            #MainMenu { display: none !important; }
-            section[data-testid="stSidebar"] { display: none !important; }
-            button[data-testid="collapsedControl"] { display: none !important; }
-            .stDeployButton { display: none !important; }
-            .stApp { margin: 0 !important; padding: 0 !important; }
-            .block-container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
-            div[data-testid="stVerticalBlock"] { gap: 0 !important; padding: 0 !important; }
-            iframe { display: block; border: none; }
-        </style>
-    """, unsafe_allow_html=True)
-    _landing_path = os.path.join(os.path.dirname(__file__), "jobless_ai_landing.html")
-    with open(_landing_path, "r", encoding="utf-8") as _f:
-        _html = _f.read()
-    # Make all fade-up elements visible immediately (IntersectionObserver
-    # doesn't fire reliably inside Streamlit iframes)
-    _html = _html.replace(
-        "</style>",
-        ".fade-up { opacity: 1 !important; transform: translateY(0) !important; }\n</style>",
-        1
-    )
-    components.html(_html, height=9500, scrolling=True)
-    st.stop()
-else:
-    st.set_page_config(
-        page_title="JobLess AI",
-        page_icon="🚀",
-        layout="wide",
-        initial_sidebar_state="expanded",
-    )
-# ══════════════════════════════════════════════════════════════
-
 # ── Provider SDK imports (graceful fallback if not installed) ──────────────
 try:
     import google.generativeai as genai
@@ -3715,6 +3668,13 @@ def _build_ai_pyq_pdf(company: str, role: str, sections: list) -> bytes:
 
 
 def main():
+    st.set_page_config(
+        page_title="JobLess AI",
+        page_icon="🚀",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+
     init_session_state()
 
     config = Config()

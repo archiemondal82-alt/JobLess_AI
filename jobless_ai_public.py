@@ -3669,8 +3669,7 @@ def _build_ai_pyq_pdf(company: str, role: str, sections: list) -> bytes:
 
 def _load_landing_page() -> str:
     """Load the landing page HTML from file, with fallback if file not found."""
-    landing_path = os.path.join(os.path.dirname(
-        __file__), "jobless_ai_landing.html")
+    landing_path = os.path.join(os.path.dirname(__file__), "jobless_ai_landing.html")
     try:
         with open(landing_path, "r", encoding="utf-8") as f:
             return f.read()
@@ -3680,37 +3679,27 @@ def _load_landing_page() -> str:
 
 def _show_landing_page():
     """Render the full-page landing experience inside Streamlit."""
-    # Hide all Streamlit chrome so the landing page looks native
     st.markdown("""
         <style>
-            /* Hide Streamlit header, footer, and sidebar toggle */
             header[data-testid="stHeader"],
             footer,
             #MainMenu,
             [data-testid="collapsedControl"],
             [data-testid="stToolbar"] { display: none !important; }
 
-            /* Remove all padding/margin so the iframe fills the viewport */
             .main > div:first-child { padding: 0 !important; }
-            .block-container {
-                padding: 0 !important;
-                max-width: 100% !important;
-            }
-            [data-testid="stAppViewContainer"] > section.main {
-                padding: 0 !important;
-            }
+            .block-container { padding: 0 !important; max-width: 100% !important; }
+            [data-testid="stAppViewContainer"] > section.main { padding: 0 !important; }
+            iframe { width: 100% !important; border: none !important; }
         </style>
     """, unsafe_allow_html=True)
 
     html_content = _load_landing_page()
 
-    # Inject a small script so CTA clicks navigate the parent window (not the iframe)
-    # This rewrites ?page=app links to use window.top.location
-    inject_nav_script = """
+    inject_script = """
     <script>
     (function() {
-        // After DOM is ready, patch all ?page=app links to navigate the top frame
-        function patchLinks() {
+        function init() {
             document.querySelectorAll('a[href="?page=app"]').forEach(function(a) {
                 a.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -3719,20 +3708,19 @@ def _show_landing_page():
             });
         }
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', patchLinks);
+            document.addEventListener('DOMContentLoaded', init);
         } else {
-            patchLinks();
+            init();
         }
     })();
     </script>
     """
 
-    # Insert the navigation script just before </body>
-    html_with_nav = html_content.replace(
-        "</body>", inject_nav_script + "\n</body>")
+    html_patched = html_content.replace("</body>", inject_script + "\n</body>")
 
-    # Render at a generous height; scrolling=True lets the page scroll inside the iframe
-    components.html(html_with_nav, height=7000, scrolling=True)
+    # scrolling=True: iframe acts like a real browser window.
+    # height=870 fills the viewport; position:fixed nav works correctly inside.
+    components.html(html_patched, height=870, scrolling=True)
 
 
 def main():

@@ -10,8 +10,6 @@ Injects into Streamlit:
   • Safe-area insets for notched phones
 """
 
-import streamlit.components.v1 as components
-
 # ─── Tab manifest — must match order in main() st.tabs() call ────────────────
 _TABS = [
     {"icon": "📊", "label": "Career",    "short": "Career"},
@@ -982,9 +980,12 @@ def _build_nav_items() -> str:
 def inject_mobile_nav():
     """
     Call this once in main() after page config.
-    Injects the complete mobile navigation layer.
+    Uses st.markdown(unsafe_allow_html=True) so CSS/JS are injected
+    DIRECTLY into the Streamlit page DOM — NOT inside a sandboxed iframe.
+    components.html() is sandboxed and CANNOT affect parent-page elements
+    like the tab bar, sidebar, or body scroll — that's why nothing changed.
     """
+    import streamlit as st
     nav_html = _MOBILE_HTML.replace("{NAV_ITEMS}", _build_nav_items())
     full_html = _MOBILE_CSS + nav_html + _MOBILE_JS
-
-    components.html(full_html, height=1, scrolling=False)
+    st.markdown(full_html, unsafe_allow_html=True)

@@ -1,1002 +1,990 @@
 """
-mobile_nav.py — JobLess AI Mobile Enhancement
-==============================================
-Drop-in module for mobile-first bottom navigation,
-smooth transitions, pull-to-refresh, no-zoom, and modal alerts.
-
-INTEGRATION (add to jobless_ai_public.py):
-─────────────────────────────────────────
-1. At top of file:
-       from mobile_nav import inject_mobile_nav
-
-2. In main(), after ui.apply_custom_css() and before the tabs block:
-       inject_mobile_nav()
-
-That's it. The rest is automatic — detects mobile, enhances experience.
+mobile_nav.py — JobLess AI Mobile Experience Layer
+====================================================
+Injects into Streamlit:
+  • Bottom navigation bar (replaces tab bar on mobile)
+  • Full-screen modal system (replaces toasts/alerts)
+  • Viewport lock (no zoom, no horizontal scroll)
+  • Pull-to-refresh with haptic feedback indicator
+  • 120fps-class page transitions using Web Animations API
+  • Safe-area insets for notched phones
 """
 
 import streamlit.components.v1 as components
 
+# ─── Tab manifest — must match order in main() st.tabs() call ────────────────
+_TABS = [
+    {"icon": "📊", "label": "Career",    "short": "Career"},
+    {"icon": "📜", "label": "History",   "short": "History"},
+    {"icon": "⚖️",  "label": "Compare",  "short": "Compare"},
+    {"icon": "📚", "label": "Resources", "short": "Learn"},
+    {"icon": "📝", "label": "Resume",    "short": "Resume"},
+    {"icon": "🎤", "label": "Interview", "short": "Interview"},
+    {"icon": "📂", "label": "PYQ Hub",   "short": "PYQ"},
+]
 
-# ═══════════════════════════════════════════════════════════════════
-# TAB MAP  (must match order in st.tabs([...]) in main())
-# ═══════════════════════════════════════════════════════════════════
-# Index : 0=Career Analysis, 1=History, 2=Compare,
-#         3=Resources, 4=Resume Builder, 5=Mock Interview, 6=PYQ Hub
-
-_MOBILE_NAV_HTML = r"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width,initial-scale=1,
-               maximum-scale=1,user-scalable=no,
-               viewport-fit=cover">
+_MOBILE_CSS = """
 <style>
-/* ── reset ─────────────────────────────────────────────── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{background:transparent;overflow:hidden;width:0;height:0}
+/* ═══════════════════════════════════════════════════
+   1. VIEWPORT & BASE RESET — no zoom, no h-scroll
+═══════════════════════════════════════════════════ */
+html, body {
+  overflow-x: hidden !important;
+  overscroll-behavior-x: none !important;
+  touch-action: pan-y !important;
+  -webkit-text-size-adjust: 100% !important;
+  -ms-text-size-adjust: 100% !important;
+  scroll-behavior: smooth;
+}
+
+/* Ensure main content doesn't overflow */
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="block-container"] {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   2. MOBILE-ONLY STYLES  (≤ 768px)
+═══════════════════════════════════════════════════ */
+@media screen and (max-width: 768px) {
+
+  /* Hide the Streamlit tab bar — replaced by bottom nav */
+  [data-testid="stTabs"] > div:first-child,
+  .stTabs [data-baseweb="tab-list"] {
+    display: none !important;
+  }
+
+  /* Sidebar — hide completely on mobile */
+  [data-testid="stSidebar"] {
+    display: none !important;
+  }
+
+  /* Sidebar toggle button — hide */
+  [data-testid="collapsedControl"],
+  button[kind="header"] {
+    display: none !important;
+  }
+
+  /* Main content — full width, bottom padding for nav bar */
+  [data-testid="block-container"] {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+    padding-top: 8px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Tab panels — add slide transition target */
+  [data-testid="stTabsContent"] {
+    animation: jl-page-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Hide Streamlit header/toolbar */
+  [data-testid="stHeader"],
+  [data-testid="stToolbar"],
+  .stDeployButton {
+    display: none !important;
+  }
+
+  /* Prevent table/code overflow */
+  pre, code, table {
+    overflow-x: auto;
+    max-width: 100%;
+    font-size: 12px !important;
+  }
+
+  /* Column stacking */
+  [data-testid="column"] {
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* Better button sizing for thumbs */
+  .stButton > button {
+    min-height: 48px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Text inputs — prevent iOS zoom on focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Remove horizontal scroll from resource grids */
+  .resource-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Job link buttons — stack vertically */
+  .job-links-row {
+    flex-direction: column !important;
+  }
+  .job-link-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Stats row — 2 col grid on mobile */
+  .stats-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Expanders — full width */
+  .stExpander {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Match rings — smaller on mobile */
+  .match-ring-wrap {
+    transform: scale(0.85);
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   3. PAGE TRANSITION ANIMATION
+═══════════════════════════════════════════════════ */
+@keyframes jl-page-in {
+  0%  { opacity: 0; transform: translateY(18px) scale(0.98); }
+  100%{ opacity: 1; transform: translateY(0)    scale(1);    }
+}
+@keyframes jl-page-out {
+  0%  { opacity: 1; transform: translateY(0) scale(1); }
+  100%{ opacity: 0; transform: translateY(-10px) scale(0.98); }
+}
+@keyframes jl-slide-up {
+  0%  { transform: translateY(100%); opacity: 0; }
+  100%{ transform: translateY(0);    opacity: 1; }
+}
+@keyframes jl-slide-down {
+  0%  { transform: translateY(0);    opacity: 1; }
+  100%{ transform: translateY(100%); opacity: 0; }
+}
+@keyframes jl-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes jl-pop-in {
+  0%  { transform: scale(0.88); opacity: 0; }
+  70% { transform: scale(1.03); opacity: 1; }
+  100%{ transform: scale(1);    opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════
+   4. BOTTOM NAVIGATION BAR
+═══════════════════════════════════════════════════ */
+#jl-bottom-nav {
+  display: none; /* JS shows on mobile */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  background: rgba(6, 11, 20, 0.97);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid rgba(0, 210, 255, 0.18);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6),
+              0 -1px 0 rgba(0, 210, 255, 0.08);
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(64px + env(safe-area-inset-bottom));
+  animation: jl-slide-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.jl-nav-inner {
+  display: flex;
+  align-items: stretch;
+  height: 64px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.jl-nav-inner::-webkit-scrollbar { display: none; }
+
+.jl-nav-item {
+  flex: 1;
+  min-width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+  scroll-snap-align: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  border: none;
+  background: transparent;
+  padding: 6px 4px;
+}
+
+.jl-nav-item:active {
+  background: rgba(0, 210, 255, 0.08);
+}
+
+.jl-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.25s ease;
+  will-change: transform;
+}
+
+.jl-nav-label {
+  font-family: 'Space Grotesk', 'SF Pro Display', -apple-system, sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #475569;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Active tab indicator */
+.jl-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 32px;
+  height: 2.5px;
+  background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.8);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.jl-nav-item.active::before {
+  transform: translateX(-50%) scaleX(1);
+}
+
+.jl-nav-item.active .jl-nav-icon {
+  transform: translateY(-2px) scale(1.18);
+  filter: drop-shadow(0 0 6px rgba(0, 210, 255, 0.7));
+}
+
+.jl-nav-item.active .jl-nav-label {
+  color: #00d2ff;
+}
+
+/* Active background glow */
+.jl-nav-item.active::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: radial-gradient(ellipse at 50% 100%, rgba(0, 210, 255, 0.12) 0%, transparent 70%);
+  border-radius: 8px;
+}
+
+/* ═══════════════════════════════════════════════════
+   5. SETTINGS FAB (replaces sidebar on mobile)
+═══════════════════════════════════════════════════ */
+#jl-settings-fab {
+  display: none;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 99998;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(6, 11, 20, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 210, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(0, 210, 255, 0.1);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: jl-fade-in 0.5s ease 0.6s both;
+}
+#jl-settings-fab:active {
+  transform: scale(0.9);
+}
+
+/* ═══════════════════════════════════════════════════
+   6. MODAL SYSTEM (replaces toasts/alerts)
+═══════════════════════════════════════════════════ */
+#jl-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: jl-fade-in 0.2s ease;
+  align-items: flex-end;
+  justify-content: center;
+}
+#jl-modal-overlay.active {
+  display: flex;
+}
+
+.jl-modal-sheet {
+  width: 100%;
+  max-width: 600px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.99), rgba(6, 11, 20, 1));
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid rgba(0, 210, 255, 0.2);
+  box-shadow: 0 -20px 80px rgba(0, 0, 0, 0.8);
+  animation: jl-slide-up 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  max-height: 85vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.jl-modal-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+.jl-modal-header {
+  padding: 16px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jl-modal-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.jl-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.jl-modal-body {
+  padding: 16px 20px 24px;
+}
+
+/* Alert variants inside modal */
+.jl-alert {
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin: 8px 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  animation: jl-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.jl-alert-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+.jl-alert-text { flex: 1; }
+.jl-alert-heading {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+.jl-alert-body {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+.jl-alert-success { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+.jl-alert-error   { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+.jl-alert-info    { background: rgba(0,210,255,0.10);  border: 1px solid rgba(0,210,255,0.25); color: #7dd3fc; }
+.jl-alert-warn    { background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.25);color: #fcd34d; }
+
+/* Settings panel inside modal */
+.jl-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.jl-settings-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+.jl-settings-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: #00d2ff;
+  background: rgba(0, 210, 255, 0.08);
+  border: 1px solid rgba(0, 210, 255, 0.2);
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+
+/* ═══════════════════════════════════════════════════
+   7. PULL TO REFRESH INDICATOR
+═══════════════════════════════════════════════════ */
+#jl-ptr {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  z-index: 99997;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.2), rgba(58, 123, 213, 0.2));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 210, 255, 0.4);
+  box-shadow: 0 4px 30px rgba(0, 210, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+
+#jl-ptr.ptr-visible {
+  transform: translateX(-50%) translateY(12px);
+}
+
+#jl-ptr.ptr-spinning {
+  animation: jl-ptr-spin 0.8s linear infinite;
+}
+
+@keyframes jl-ptr-spin {
+  from { transform: translateX(-50%) translateY(12px) rotate(0deg); }
+  to   { transform: translateX(-50%) translateY(12px) rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════
+   8. PAGE TRANSITION OVERLAY
+═══════════════════════════════════════════════════ */
+#jl-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999998;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(0, 210, 255, 0.06) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+#jl-transition-overlay.flash {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════
+   9. SMOOTH SCROLLING & MOMENTUM
+═══════════════════════════════════════════════════ */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar hidden on mobile */
+@media screen and (max-width: 768px) {
+  *::-webkit-scrollbar { width: 0 !important; display: none !important; }
+  * { scrollbar-width: none !important; }
+}
 </style>
-</head>
-<body>
+"""
+
+_MOBILE_HTML = """
+<!-- Pull-to-refresh indicator -->
+<div id="jl-ptr">🔄</div>
+
+<!-- Page transition flash overlay -->
+<div id="jl-transition-overlay"></div>
+
+<!-- Bottom Navigation Bar -->
+<nav id="jl-bottom-nav" role="navigation" aria-label="Main navigation">
+  <div class="jl-nav-inner">
+    {NAV_ITEMS}
+  </div>
+</nav>
+
+<!-- Settings FAB -->
+<button id="jl-settings-fab" aria-label="Settings" title="Settings">⚙️</button>
+
+<!-- Modal Overlay -->
+<div id="jl-modal-overlay" role="dialog" aria-modal="true" aria-label="Panel">
+  <div class="jl-modal-sheet" id="jl-modal-sheet">
+    <div class="jl-modal-handle"></div>
+    <div class="jl-modal-header">
+      <div class="jl-modal-title" id="jl-modal-title">Settings</div>
+      <button class="jl-modal-close" id="jl-modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="jl-modal-body" id="jl-modal-body"></div>
+  </div>
+</div>
+"""
+
+_MOBILE_JS = r"""
 <script>
-/* ══════════════════════════════════════════════════════════
-   JOBLESS AI — MOBILE ENHANCEMENT ENGINE  v3.0
-   Hooks into the parent Streamlit document.
-   Only activates on screens < 768 px.
-══════════════════════════════════════════════════════════ */
-(function(){
+(function() {
 'use strict';
 
-/* ── helpers ── */
-var P   = window.parent;
-var D   = P.document;
-var MOBILE_BREAKPOINT = 768;
-var isMobile = P.innerWidth < MOBILE_BREAKPOINT;
-
-/* Re-check on resize */
-P.addEventListener('resize', function(){
-  isMobile = P.innerWidth < MOBILE_BREAKPOINT;
-  if(isMobile){ mount(); } else { unmount(); }
-}, {passive:true});
-
-if(!isMobile){ return; }
-
-/* ── Tab definitions ── */
-var TABS = [
-  { label:'Analysis',  icon:'📊', idx:0 },
-  { label:'Resume',    icon:'📝', idx:4 },
-  { label:'Interview', icon:'🎤', idx:5 },
-  { label:'History',   icon:'📜', idx:1 },
-  { label:'More',      icon:'⋯',  idx:-1 }
-];
-var MORE_TABS = [
-  { label:'Compare',   icon:'⚖️',  idx:2 },
-  { label:'Resources', icon:'📚', idx:3 },
-  { label:'PYQ Hub',   icon:'📂', idx:6 }
-];
-
-var mounted   = false;
-var activeTab = 0;
-var moreOpen  = false;
-var navEl, overlayEl, moreDrawerEl, transitionEl, modalEl;
-var ptrEl, ptrActive=false, ptrStart=0, ptrCur=0;
-
-/* ═══════════════════════════════════════════════
-   INJECT GLOBAL MOBILE CSS into parent document
-═══════════════════════════════════════════════ */
-function injectCSS(){
-  if(D.getElementById('jl-mobile-css')) return;
-  var s = D.createElement('style');
-  s.id = 'jl-mobile-css';
-  s.textContent = `
-    /* ── no zoom, no horizontal scroll ── */
-    html { touch-action: pan-y !important; }
-    body { overflow-x: hidden !important; }
-
-    /* ── prevent iOS double-tap zoom ── */
-    * { touch-action: manipulation; }
-
-    /* ── fix viewport meta in Streamlit iframe ── */
-    :root {
-      --nav-h: 68px;
-      --nav-safe: max(var(--nav-h), calc(var(--nav-h) + env(safe-area-inset-bottom)));
-      --accent:  #00d2ff;
-      --accent2: #a855f7;
-      --bg:      #060b14;
-      --bg2:     #0d1828;
-      --glass:   rgba(13,24,40,0.92);
-      --border:  rgba(0,210,255,0.18);
-      --trans:   cubic-bezier(0.32,0.72,0,1);
-    }
-
-    /* ── hide native Streamlit tab bar on mobile ── */
-    @media (max-width: 768px) {
-      [data-baseweb="tab-list"],
-      [data-testid="stTabBar"],
-      div[class*="stTabs"] > div:first-child {
-        display: none !important;
-      }
-
-      /* Bottom padding so content isn't behind nav */
-      .main .block-container {
-        padding-bottom: var(--nav-safe) !important;
-        padding-top: 8px !important;
-        padding-left: 12px !important;
-        padding-right: 12px !important;
-        max-width: 100% !important;
-      }
-
-      /* Remove Streamlit's default wide padding */
-      section.main { padding: 0 !important; }
-
-      /* No horizontal overflow anywhere */
-      * { max-width: 100% !important; }
-      img, iframe, video, canvas { max-width: 100% !important; }
-    }
-
-    /* ── PAGE TRANSITION LAYER ── */
-    #jl-transition {
-      position: fixed;
-      inset: 0;
-      z-index: 9998;
-      pointer-events: none;
-      background: radial-gradient(circle at 50% 50%,
-        rgba(0,210,255,0.18) 0%,
-        rgba(0,0,0,0) 70%);
-      opacity: 0;
-      transition: opacity 0.35s ease;
-    }
-    #jl-transition.active { opacity: 1; pointer-events: all; }
-
-    /* ── PULL-TO-REFRESH INDICATOR ── */
-    #jl-ptr {
-      position: fixed;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%) translateY(-80px);
-      width: 44px;
-      height: 44px;
-      background: var(--glass);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      z-index: 9999;
-      transition: transform 0.3s var(--trans), opacity 0.3s;
-      box-shadow: 0 4px 24px rgba(0,210,255,0.2);
-      opacity: 0;
-      backdrop-filter: blur(20px);
-    }
-    #jl-ptr.visible {
-      opacity: 1;
-    }
-    #jl-ptr.releasing {
-      border-color: var(--accent);
-      box-shadow: 0 0 24px rgba(0,210,255,0.5);
-    }
-    #jl-ptr .ptr-icon {
-      display: inline-block;
-      transition: transform 0.3s;
-    }
-    #jl-ptr.releasing .ptr-icon { transform: rotate(180deg); }
-
-    /* ── BOTTOM NAVIGATION BAR ── */
-    #jl-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: var(--nav-safe);
-      padding-bottom: env(safe-area-inset-bottom);
-      z-index: 9000;
-      background: var(--glass);
-      backdrop-filter: blur(28px) saturate(180%);
-      -webkit-backdrop-filter: blur(28px) saturate(180%);
-      border-top: 1px solid var(--border);
-      box-shadow:
-        0 -1px 0 rgba(0,210,255,0.08),
-        0 -20px 60px rgba(0,0,0,0.5),
-        inset 0 1px 0 rgba(255,255,255,0.05);
-      display: flex;
-      align-items: flex-start;
-      padding-top: 0;
-      transition: transform 0.4s var(--trans);
-    }
-
-    #jl-nav.hidden { transform: translateY(110%); }
-
-    /* Active glow line */
-    #jl-nav::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: var(--glow-x, 10%);
-      width: 20%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      border-radius: 0 0 4px 4px;
-      transition: left 0.4s var(--trans);
-      filter: blur(1px);
-      box-shadow: 0 0 8px var(--accent);
-    }
-
-    .jl-tab-btn {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      height: var(--nav-h);
-      border: none;
-      background: transparent;
-      color: rgba(255,255,255,0.38);
-      cursor: pointer;
-      position: relative;
-      transition: color 0.25s ease;
-      -webkit-tap-highlight-color: transparent;
-      outline: none;
-      user-select: none;
-    }
-
-    .jl-tab-btn:active { transform: scale(0.88); }
-
-    .jl-tab-btn.active { color: var(--accent); }
-
-    .jl-tab-icon {
-      font-size: 20px;
-      line-height: 1;
-      transition: transform 0.3s var(--trans), filter 0.3s;
-    }
-    .jl-tab-btn.active .jl-tab-icon {
-      transform: translateY(-3px) scale(1.15);
-      filter: drop-shadow(0 0 6px rgba(0,210,255,0.7));
-    }
-
-    .jl-tab-label {
-      font-family: 'Space Grotesk', 'Inter', sans-serif;
-      font-size: 9.5px;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      transition: opacity 0.25s;
-      opacity: 0.7;
-    }
-    .jl-tab-btn.active .jl-tab-label { opacity: 1; }
-
-    /* Active dot pip */
-    .jl-tab-btn.active::after {
-      content: '';
-      position: absolute;
-      bottom: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 6px var(--accent);
-      animation: pipBlink 2.5s ease-in-out infinite;
-    }
-    @keyframes pipBlink {
-      0%,100%{opacity:1} 50%{opacity:0.4}
-    }
-
-    /* ── MORE DRAWER OVERLAY ── */
-    #jl-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0);
-      z-index: 8990;
-      transition: background 0.35s ease;
-      pointer-events: none;
-    }
-    #jl-overlay.open {
-      background: rgba(0,0,0,0.6);
-      pointer-events: all;
-      backdrop-filter: blur(4px);
-    }
-
-    /* ── MORE DRAWER ── */
-    #jl-more-drawer {
-      position: fixed;
-      bottom: var(--nav-safe);
-      left: 0;
-      right: 0;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-bottom: none;
-      border-radius: 24px 24px 0 0;
-      z-index: 8995;
-      padding: 12px 0 16px;
-      transform: translateY(110%);
-      transition: transform 0.4s var(--trans);
-      box-shadow: 0 -20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
-    }
-    #jl-more-drawer.open {
-      transform: translateY(0);
-    }
-
-    .jl-drawer-handle {
-      width: 36px;
-      height: 4px;
-      border-radius: 2px;
-      background: rgba(255,255,255,0.15);
-      margin: 0 auto 16px;
-    }
-
-    .jl-drawer-title {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.25);
-      padding: 0 20px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      margin-bottom: 8px;
-    }
-
-    .jl-drawer-item {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 14px 24px;
-      border: none;
-      background: transparent;
-      color: rgba(255,255,255,0.75);
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-      transition: background 0.2s, color 0.2s;
-      -webkit-tap-highlight-color: transparent;
-      outline: none;
-    }
-    .jl-drawer-item:active { background: rgba(0,210,255,0.08); }
-    .jl-drawer-item.active {
-      color: var(--accent);
-      background: rgba(0,210,255,0.06);
-    }
-    .jl-drawer-item-icon {
-      font-size: 22px;
-      width: 36px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-    .jl-drawer-item-text {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-    .jl-drawer-item-label {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-    }
-    .jl-drawer-item-sub {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 11px;
-      color: rgba(255,255,255,0.3);
-    }
-    .jl-drawer-item.active .jl-drawer-item-sub { color: rgba(0,210,255,0.5); }
-    .jl-drawer-item-check {
-      margin-left: auto;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: rgba(0,210,255,0.12);
-      border: 1.5px solid rgba(0,210,255,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: var(--accent);
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .jl-drawer-item.active .jl-drawer-item-check { opacity: 1; }
-
-    /* ── MODAL (replaces toasts/alerts on mobile) ── */
-    #jl-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(8px);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      padding: 20px;
-    }
-    #jl-modal-backdrop.open {
-      opacity: 1;
-      pointer-events: all;
-    }
-    #jl-modal {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 28px 24px 20px;
-      width: 100%;
-      max-width: 380px;
-      box-shadow:
-        0 0 0 1px rgba(0,210,255,0.06),
-        0 30px 80px rgba(0,0,0,0.7),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-      transform: scale(0.88) translateY(20px);
-      transition: transform 0.35s var(--trans);
-      position: relative;
-      overflow: hidden;
-    }
-    #jl-modal-backdrop.open #jl-modal {
-      transform: scale(1) translateY(0);
-    }
-
-    /* Glow accent line */
-    #jl-modal::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 15%;
-      right: 15%;
-      height: 2px;
-      border-radius: 0 0 4px 4px;
-      background: linear-gradient(90deg, transparent, var(--jl-modal-color, var(--accent)), transparent);
-      box-shadow: 0 0 12px var(--jl-modal-color, var(--accent));
-    }
-
-    .jl-modal-icon {
-      font-size: 36px;
-      text-align: center;
-      margin-bottom: 14px;
-      display: block;
-    }
-    .jl-modal-title {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 17px;
-      font-weight: 700;
-      color: #e2e8f0;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .jl-modal-body {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 14px;
-      color: rgba(255,255,255,0.55);
-      text-align: center;
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-    .jl-modal-btn {
-      display: block;
-      width: 100%;
-      padding: 13px;
-      border: none;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--accent), #3a7bd5);
-      color: #fff;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.15s;
-      box-shadow: 0 4px 20px rgba(0,210,255,0.3);
-    }
-    .jl-modal-btn:active { transform: scale(0.96); opacity: 0.85; }
-    .jl-modal-btn.secondary {
-      background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.5);
-      box-shadow: none;
-      margin-top: 8px;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    /* ── TAB TRANSITION RIPPLE ── */
-    #jl-ripple {
-      position: fixed;
-      width: 0; height: 0;
-      border-radius: 50%;
-      background: radial-gradient(circle,
-        rgba(0,210,255,0.22) 0%,
-        rgba(0,210,255,0) 70%);
-      transform: translate(-50%,-50%) scale(0);
-      z-index: 9000;
-      pointer-events: none;
-      transition: none;
-    }
-    #jl-ripple.animate {
-      transition: transform 0.6s cubic-bezier(0.2,0,0.5,1),
-                  opacity 0.6s ease;
-      transform: translate(-50%,-50%) scale(1);
-      opacity: 0;
-    }
-  `;
-  D.head.appendChild(s);
-}
-
-/* ═══════════════════════════════════════════════
-   PATCH VIEWPORT META — prevent zoom in Streamlit
-═══════════════════════════════════════════════ */
-function patchViewport(){
-  var existing = D.querySelector('meta[name="viewport"]');
-  var content  = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
-  if(existing){ existing.setAttribute('content', content); }
-  else {
-    var m = D.createElement('meta');
+// ── Viewport meta — inject no-zoom, no-scale ──────────────────────────────
+(function injectViewport() {
+  var existing = document.querySelector('meta[name="viewport"]');
+  var content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+  if (existing) {
+    existing.setAttribute('content', content);
+  } else {
+    var m = document.createElement('meta');
     m.name = 'viewport';
     m.content = content;
-    D.head.insertBefore(m, D.head.firstChild);
+    document.head.appendChild(m);
   }
+})();
+
+// ── Device detection ──────────────────────────────────────────────────────
+var isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+if (!isMobile) return; // Desktop: do nothing
+
+// ── Show mobile-only elements ─────────────────────────────────────────────
+var bottomNav = document.getElementById('jl-bottom-nav');
+var fab       = document.getElementById('jl-settings-fab');
+if (bottomNav) bottomNav.style.display = 'block';
+if (fab)       fab.style.display = 'flex';
+
+// ── State ─────────────────────────────────────────────────────────────────
+var currentTab = 0;
+var isTransitioning = false;
+var navItems = document.querySelectorAll('.jl-nav-item');
+var overlay = document.getElementById('jl-transition-overlay');
+var ptr = document.getElementById('jl-ptr');
+var modal = document.getElementById('jl-modal-overlay');
+var modalTitle = document.getElementById('jl-modal-title');
+var modalBody = document.getElementById('jl-modal-body');
+
+// ── Tab switching via click on Streamlit's real tab buttons ───────────────
+function getStreamlitTabs() {
+  // Try multiple selectors since Streamlit updates its class names
+  var selectors = [
+    '[data-testid="stTabs"] [data-baseweb="tab"]',
+    '.stTabs [role="tab"]',
+    '[data-testid="stTabsTabList"] button',
+    '[role="tablist"] [role="tab"]'
+  ];
+  for (var i = 0; i < selectors.length; i++) {
+    var tabs = document.querySelectorAll(selectors[i]);
+    if (tabs && tabs.length > 0) return tabs;
+  }
+  return [];
 }
 
-/* ═══════════════════════════════════════════════
-   TAB SWITCHING
-═══════════════════════════════════════════════ */
-function switchTab(idx, fromX){
-  if(idx === activeTab) return;
-  triggerRipple(fromX);
-  showTransition(function(){
-    var list = D.querySelector('[data-baseweb="tab-list"]');
-    if(!list){ list = D.querySelector('[data-testid="stTabBar"]'); }
-    if(list){
-      var btns = list.querySelectorAll('[role="tab"]');
-      if(btns[idx]){ btns[idx].click(); }
+function switchTab(index) {
+  if (isTransitioning) return;
+  isTransitioning = true;
+
+  // Visual transition flash
+  if (overlay) {
+    overlay.classList.add('flash');
+    setTimeout(function() { overlay.classList.remove('flash'); }, 220);
+  }
+
+  // Update bottom nav active states
+  navItems.forEach(function(item, i) {
+    item.classList.toggle('active', i === index);
+  });
+
+  // Haptic feedback (supported on modern Android/iOS)
+  try {
+    if (navigator.vibrate) navigator.vibrate(8);
+  } catch(e) {}
+
+  // Click the real Streamlit tab
+  setTimeout(function() {
+    var stTabs = getStreamlitTabs();
+    if (stTabs && stTabs[index]) {
+      stTabs[index].click();
+      // Scroll to top after tab switch
+      setTimeout(function() {
+        var mainContent = document.querySelector('[data-testid="stMain"]') ||
+                          document.querySelector('[data-testid="block-container"]') ||
+                          document.documentElement;
+        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        isTransitioning = false;
+      }, 200);
+    } else {
+      isTransitioning = false;
     }
-    activeTab = idx;
-    updateNavUI();
+    currentTab = index;
+  }, 80);
+}
+
+// ── Attach nav item listeners ─────────────────────────────────────────────
+navItems.forEach(function(item, index) {
+  item.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    switchTab(index);
+  }, { passive: false });
+
+  // Touch ripple effect
+  item.addEventListener('touchstart', function() {
+    this.style.background = 'rgba(0, 210, 255, 0.1)';
+  }, { passive: true });
+  item.addEventListener('touchend', function() {
+    var el = this;
+    setTimeout(function() { el.style.background = ''; }, 150);
+  }, { passive: true });
+});
+
+// ── Settings FAB → Modal ──────────────────────────────────────────────────
+if (fab) {
+  fab.addEventListener('click', function() {
+    openSettingsModal();
   });
 }
 
-/* ═══════════════════════════════════════════════
-   RIPPLE + TRANSITION
-═══════════════════════════════════════════════ */
-var rippleEl;
-function triggerRipple(x){
-  if(!rippleEl){ return; }
-  var size = Math.max(P.innerWidth, P.innerHeight) * 2.2;
-  var xPos = (x !== undefined) ? x : P.innerWidth/2;
-  var yPos = P.innerHeight - 34;
-  rippleEl.style.cssText =
-    'width:'+size+'px;height:'+size+'px;left:'+xPos+'px;top:'+yPos+'px;opacity:1;';
-  rippleEl.classList.remove('animate');
-  void rippleEl.offsetWidth;
-  rippleEl.classList.add('animate');
+function openSettingsModal() {
+  if (!modalTitle || !modalBody || !modal) return;
+  modalTitle.textContent = '⚙️ Settings';
+
+  // Pull current settings from Streamlit's sidebar DOM
+  var providerEl = document.querySelector('[data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stMarkdownContainer"]');
+  var providerText = providerEl ? providerEl.textContent.trim() : 'Not set';
+
+  modalBody.innerHTML = [
+    '<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:16px;">',
+    'Configure AI settings via the sidebar on desktop, or use the controls below.',
+    '</div>',
+    '<div class="jl-settings-row">',
+    '  <span class="jl-settings-label">🤖 AI Provider</span>',
+    '  <span class="jl-settings-value">Sidebar →</span>',
+    '</div>',
+    '<div class="jl-settings-row">',
+    '  <span class="jl-settings-label">🧠 Model</span>',
+    '  <span class="jl-settings-value">Sidebar →</span>',
+    '</div>',
+    '<div class="jl-settings-row">',
+    '  <span class="jl-settings-label">📱 Screen</span>',
+    '  <span class="jl-settings-value">' + window.innerWidth + '×' + window.innerHeight + '</span>',
+    '</div>',
+    '<div style="margin-top:20px;padding:14px 16px;background:rgba(0,210,255,0.06);',
+    'border:1px solid rgba(0,210,255,0.2);border-radius:12px;">',
+    '  <div style="color:#00d2ff;font-weight:700;font-size:0.85rem;margin-bottom:6px;">💡 Tip</div>',
+    '  <div style="color:#94a3b8;font-size:0.82rem;line-height:1.5;">',
+    '  To change AI provider & API key, switch to desktop view or rotate to landscape.',
+    '  </div>',
+    '</div>',
+    '<div style="margin-top:12px;">',
+    '  <button onclick="window.location.reload()" style="',
+    '    width:100%;padding:12px;border-radius:10px;border:1px solid rgba(0,210,255,0.3);',
+    '    background:rgba(0,210,255,0.08);color:#00d2ff;font-size:0.9rem;font-weight:700;',
+    '    cursor:pointer;font-family:Space Grotesk,sans-serif;">',
+    '    🔄 Refresh App',
+    '  </button>',
+    '</div>'
+  ].join('');
+
+  openModal();
 }
 
-function showTransition(cb){
-  if(!transitionEl){ if(cb) cb(); return; }
-  transitionEl.classList.add('active');
-  P.setTimeout(function(){
-    if(cb) cb();
-    P.setTimeout(function(){
-      transitionEl.classList.remove('active');
-    }, 200);
-  }, 120);
+// ── Modal open/close ──────────────────────────────────────────────────────
+function openModal() {
+  if (!modal) return;
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
 }
 
-/* ═══════════════════════════════════════════════
-   UPDATE NAV ACTIVE STATE + GLOW POSITION
-═══════════════════════════════════════════════ */
-function updateNavUI(){
-  if(!navEl) return;
+function closeModal() {
+  if (!modal) return;
+  var sheet = document.getElementById('jl-modal-sheet');
+  if (sheet) {
+    sheet.style.animation = 'jl-slide-down 0.28s cubic-bezier(0.55, 0, 1, 0.45) both';
+    setTimeout(function() {
+      modal.classList.remove('active');
+      if (sheet) sheet.style.animation = '';
+      document.body.style.overflow = '';
+    }, 260);
+  } else {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
 
-  /* Update bottom bar buttons */
-  var btns = navEl.querySelectorAll('.jl-tab-btn');
-  btns.forEach(function(b, i){
-    var ti = TABS[i];
-    var isActive = (ti.idx === activeTab) ||
-                   (ti.idx === -1 && MORE_TABS.some(function(m){ return m.idx===activeTab; }));
-    b.classList.toggle('active', isActive);
+// Close on overlay click
+if (modal) {
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
   });
+}
 
-  /* Move glow line */
-  var activeIndex = -1;
-  TABS.forEach(function(t,i){
-    if(t.idx === activeTab) activeIndex = i;
-    if(t.idx === -1 && MORE_TABS.some(function(m){ return m.idx===activeTab; })){
-      activeIndex = i;
+// Close button
+var closeBtn = document.getElementById('jl-modal-close');
+if (closeBtn) {
+  closeBtn.addEventListener('click', closeModal);
+}
+
+// ── Pull to Refresh ───────────────────────────────────────────────────────
+var ptrStartY = 0;
+var ptrCurrentY = 0;
+var ptrActive = false;
+var PTR_THRESHOLD = 72;
+
+document.addEventListener('touchstart', function(e) {
+  var scrollEl = document.querySelector('[data-testid="stMain"]') || document.documentElement;
+  if (scrollEl.scrollTop <= 0) {
+    ptrStartY = e.touches[0].clientY;
+    ptrActive = true;
+  }
+}, { passive: true });
+
+document.addEventListener('touchmove', function(e) {
+  if (!ptrActive || !ptr) return;
+  ptrCurrentY = e.touches[0].clientY;
+  var delta = ptrCurrentY - ptrStartY;
+
+  if (delta > 0 && delta < PTR_THRESHOLD * 2) {
+    var progress = Math.min(delta / PTR_THRESHOLD, 1);
+    ptr.style.transform = 'translateX(-50%) translateY(' + (-80 + progress * 92) + 'px)';
+    ptr.style.opacity = String(progress);
+
+    if (delta > PTR_THRESHOLD) {
+      ptr.classList.add('ptr-visible');
+      ptr.textContent = '↻';
     }
-  });
-  if(activeIndex >= 0){
-    var pct = (activeIndex / (TABS.length - 1)) * 80;
-    navEl.style.setProperty('--glow-x', pct + '%');
+  }
+}, { passive: true });
+
+document.addEventListener('touchend', function(e) {
+  if (!ptrActive || !ptr) return;
+  var delta = ptrCurrentY - ptrStartY;
+
+  if (delta > PTR_THRESHOLD) {
+    // Trigger refresh
+    ptr.classList.add('ptr-spinning');
+    ptr.textContent = '⟳';
+    try { if (navigator.vibrate) navigator.vibrate([10, 50, 10]); } catch(ex) {}
+
+    setTimeout(function() {
+      window.location.reload();
+    }, 600);
+  } else {
+    // Reset
+    ptr.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    ptr.style.transform = 'translateX(-50%) translateY(-80px)';
+    ptr.style.opacity = '0';
+    ptr.classList.remove('ptr-visible');
+    setTimeout(function() {
+      ptr.style.transition = '';
+      ptr.textContent = '🔄';
+    }, 300);
   }
 
-  /* Update drawer items */
-  if(moreDrawerEl){
-    var items = moreDrawerEl.querySelectorAll('.jl-drawer-item');
-    items.forEach(function(item){
-      var idx = parseInt(item.getAttribute('data-tab-idx'));
-      item.classList.toggle('active', idx === activeTab);
-    });
+  ptrActive = false;
+  ptrStartY = 0;
+  ptrCurrentY = 0;
+}, { passive: true });
+
+// ── Swipe between tabs (horizontal swipe on content area) ────────────────
+var swipeStartX = 0;
+var swipeStartY = 0;
+var swipeStarted = false;
+var SWIPE_THRESHOLD = 60;
+var SWIPE_ANGLE_MAX = 35; // degrees
+
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    swipeStarted = true;
   }
-}
+}, { passive: true });
 
-/* ═══════════════════════════════════════════════
-   MORE DRAWER
-═══════════════════════════════════════════════ */
-function openMore(){
-  moreOpen = true;
-  overlayEl.classList.add('open');
-  moreDrawerEl.classList.add('open');
-}
-function closeMore(){
-  moreOpen = false;
-  overlayEl.classList.remove('open');
-  moreDrawerEl.classList.remove('open');
-}
+document.addEventListener('touchend', function(e) {
+  if (!swipeStarted) return;
+  swipeStarted = false;
 
-/* ═══════════════════════════════════════════════
-   MODAL (replaces alerts/toasts on mobile)
-═══════════════════════════════════════════════ */
-function showModal(opts){
-  /* opts: { icon, title, body, type, actions:[{label,cb,secondary}] } */
-  if(!modalEl) return;
-  var backdrop = D.getElementById('jl-modal-backdrop');
-  if(!backdrop) return;
+  var endX = e.changedTouches[0].clientX;
+  var endY = e.changedTouches[0].clientY;
+  var deltaX = endX - swipeStartX;
+  var deltaY = endY - swipeStartY;
 
-  var typeColors = { success:'#34d399', error:'#f87171', info:'#00d2ff', warning:'#fbbf24' };
-  var color = typeColors[opts.type] || typeColors.info;
-  modalEl.style.setProperty('--jl-modal-color', color);
+  // Only horizontal swipes (angle check)
+  if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+  var angle = Math.abs(Math.atan2(deltaY, deltaX) * 180 / Math.PI);
+  if (angle > SWIPE_ANGLE_MAX && angle < (180 - SWIPE_ANGLE_MAX)) return;
 
-  backdrop.querySelector('.jl-modal-icon').textContent   = opts.icon  || '💡';
-  backdrop.querySelector('.jl-modal-title').textContent  = opts.title || 'Notice';
-  backdrop.querySelector('.jl-modal-body').textContent   = opts.body  || '';
+  // Don't swipe inside modals
+  if (modal && modal.classList.contains('active')) return;
 
-  /* Build buttons */
-  var btnContainer = backdrop.querySelector('.jl-modal-btns');
-  btnContainer.innerHTML = '';
-  var actions = opts.actions || [{label:'Got it', cb:null}];
-  actions.forEach(function(a){
-    var btn = D.createElement('button');
-    btn.className = 'jl-modal-btn' + (a.secondary ? ' secondary' : '');
-    btn.textContent = a.label;
-    btn.onclick = function(){
-      closeModal();
-      if(a.cb) a.cb();
-    };
-    btnContainer.appendChild(btn);
-  });
+  var totalTabs = navItems.length;
+  if (deltaX < 0 && currentTab < totalTabs - 1) {
+    switchTab(currentTab + 1);
+  } else if (deltaX > 0 && currentTab > 0) {
+    switchTab(currentTab - 1);
+  }
+}, { passive: true });
 
-  backdrop.classList.add('open');
-}
+// ── Intercept Streamlit alerts/toasts → show as modal ────────────────────
+function interceptAlerts() {
+  // Override window.alert
+  var origAlert = window.alert;
+  window.alert = function(msg) {
+    showJLModal('ℹ️ Notice', msg, 'info');
+  };
 
-function closeModal(){
-  var backdrop = D.getElementById('jl-modal-backdrop');
-  if(backdrop) backdrop.classList.remove('open');
-}
+  // Watch for Streamlit toast elements appearing in DOM
+  var alertObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      mutation.addedNodes.forEach(function(node) {
+        if (!node.querySelector) return;
 
-/* ═══════════════════════════════════════════════
-   INTERCEPT STREAMLIT ALERTS/TOASTS → MODAL
-═══════════════════════════════════════════════ */
-function interceptAlerts(){
-  /* Watch for Streamlit alert elements and replace with modal */
-  var lastError = null, lastSuccess = null, lastInfo = null;
-  var observer = new P.MutationObserver(function(mutations){
-    mutations.forEach(function(m){
-      m.addedNodes.forEach(function(node){
-        if(node.nodeType !== 1) return;
-        /* Streamlit toast */
-        if(node.getAttribute && (
-            node.getAttribute('data-testid') === 'stToast' ||
-            (node.className && String(node.className).includes('toast'))
-        )){
-          var text = node.textContent || '';
-          node.style.display = 'none';
-          showModal({ icon:'ℹ️', title:'Notice', body:text.trim(), type:'info' });
-          return;
-        }
-        /* Streamlit error / success / info elements */
-        var alerts = node.querySelectorAll ? node.querySelectorAll(
-          '[data-testid="stAlert"]'
-        ) : [];
-        alerts.forEach(function(a){
+        // Streamlit toast/notification
+        var toast = node.querySelector('[data-testid="stToast"]') ||
+                    (node.dataset && node.dataset.testid === 'stToast' ? node : null);
+
+        if (toast) {
+          var text = toast.textContent.trim();
           var type = 'info';
-          var icon = 'ℹ️';
-          if(a.classList.contains('st-emotion-cache-') ||
-             a.querySelector('[data-testid="stAlertDynamicIcon"]')){
-            var iconEl = a.querySelector('[data-testid="stAlertDynamicIcon"]');
-            if(iconEl){
-              var ic = iconEl.textContent;
-              if(ic.includes('✓') || ic.includes('✅')){ type='success'; icon='✅'; }
-              else if(ic.includes('⚠') || ic.includes('!')){ type='warning'; icon='⚠️'; }
-              else if(ic.includes('✗') || ic.includes('×')){ type='error'; icon='❌'; }
-            }
-          }
-          var body = a.querySelector('[data-testid="stMarkdownContainer"]');
-          var bodyText = body ? body.textContent : a.textContent;
-          a.style.display = 'none';
-          showModal({ icon:icon, title:type.charAt(0).toUpperCase()+type.slice(1),
-                      body:bodyText.trim().substring(0,200), type:type });
-        });
-      });
-    });
-  });
-  observer.observe(D.body, { childList:true, subtree:true });
-}
+          if (text.includes('⚠️') || text.includes('warning')) type = 'warn';
+          if (text.includes('✅') || text.includes('success')) type = 'success';
+          if (text.includes('❌') || text.includes('error'))   type = 'error';
 
-/* ═══════════════════════════════════════════════
-   PULL TO REFRESH
-═══════════════════════════════════════════════ */
-var PTR_THRESHOLD = 80;
-var ptrIndicator;
-
-function initPullToRefresh(){
-  ptrIndicator = D.getElementById('jl-ptr');
-  if(!ptrIndicator) return;
-
-  var startY = 0, curY = 0, pulling = false;
-
-  D.addEventListener('touchstart', function(e){
-    /* Only trigger at very top of page */
-    if(D.documentElement.scrollTop > 5) return;
-    startY = e.touches[0].clientY;
-    pulling = true;
-  }, {passive:true});
-
-  D.addEventListener('touchmove', function(e){
-    if(!pulling) return;
-    curY = e.touches[0].clientY;
-    var delta = curY - startY;
-    if(delta < 0){ pulling=false; return; }
-    var clamped = Math.min(delta, PTR_THRESHOLD * 1.6);
-    var progress = Math.min(clamped / PTR_THRESHOLD, 1);
-    var translateY = clamped * 0.55;
-    ptrIndicator.style.transform = 'translateX(-50%) translateY('+(translateY - 80)+'px)';
-    ptrIndicator.classList.toggle('visible', progress > 0.2);
-    ptrIndicator.classList.toggle('releasing', progress >= 1);
-    /* Rotate spinner */
-    var spinner = ptrIndicator.querySelector('.ptr-icon');
-    if(spinner) spinner.style.transform = 'rotate('+(progress*180)+'deg)';
-  }, {passive:true});
-
-  D.addEventListener('touchend', function(){
-    if(!pulling) return;
-    pulling = false;
-    var delta = curY - startY;
-    ptrIndicator.classList.remove('visible','releasing');
-    ptrIndicator.style.transform = 'translateX(-50%) translateY(-80px)';
-    if(delta >= PTR_THRESHOLD){
-      showTransition(function(){ P.location.reload(); });
-    }
-  }, {passive:true});
-}
-
-/* ═══════════════════════════════════════════════
-   BUILD DOM
-═══════════════════════════════════════════════ */
-function buildDOM(){
-
-  /* ── Transition layer ── */
-  transitionEl = D.getElementById('jl-transition');
-  if(!transitionEl){
-    transitionEl = D.createElement('div');
-    transitionEl.id = 'jl-transition';
-    D.body.appendChild(transitionEl);
-  }
-
-  /* ── Ripple ── */
-  rippleEl = D.getElementById('jl-ripple');
-  if(!rippleEl){
-    rippleEl = D.createElement('div');
-    rippleEl.id = 'jl-ripple';
-    D.body.appendChild(rippleEl);
-  }
-
-  /* ── Pull-to-refresh indicator ── */
-  if(!D.getElementById('jl-ptr')){
-    var ptr = D.createElement('div');
-    ptr.id = 'jl-ptr';
-    ptr.innerHTML = '<span class="ptr-icon">↓</span>';
-    D.body.appendChild(ptr);
-  }
-
-  /* ── Overlay ── */
-  overlayEl = D.getElementById('jl-overlay');
-  if(!overlayEl){
-    overlayEl = D.createElement('div');
-    overlayEl.id = 'jl-overlay';
-    D.body.appendChild(overlayEl);
-    overlayEl.addEventListener('click', closeMore);
-  }
-
-  /* ── More drawer ── */
-  moreDrawerEl = D.getElementById('jl-more-drawer');
-  if(!moreDrawerEl){
-    moreDrawerEl = D.createElement('div');
-    moreDrawerEl.id = 'jl-more-drawer';
-    var drawerHTML = '<div class="jl-drawer-handle"></div><div class="jl-drawer-title">More Sections</div>';
-    var moreSubs = {
-      2: 'Compare career paths',
-      3: 'Learning materials',
-      6: 'Practice questions'
-    };
-    MORE_TABS.forEach(function(t){
-      drawerHTML +=
-        '<button class="jl-drawer-item" data-tab-idx="'+t.idx+'">' +
-          '<span class="jl-drawer-item-icon">'+t.icon+'</span>' +
-          '<span class="jl-drawer-item-text">' +
-            '<span class="jl-drawer-item-label">'+t.label+'</span>' +
-            '<span class="jl-drawer-item-sub">'+(moreSubs[t.idx]||'')+'</span>' +
-          '</span>' +
-          '<span class="jl-drawer-item-check">✓</span>' +
-        '</button>';
-    });
-    moreDrawerEl.innerHTML = drawerHTML;
-    D.body.appendChild(moreDrawerEl);
-
-    moreDrawerEl.querySelectorAll('.jl-drawer-item').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var idx = parseInt(btn.getAttribute('data-tab-idx'));
-        closeMore();
-        P.setTimeout(function(){ switchTab(idx); }, 120);
-      });
-    });
-  }
-
-  /* ── Modal backdrop ── */
-  if(!D.getElementById('jl-modal-backdrop')){
-    var backdrop = D.createElement('div');
-    backdrop.id = 'jl-modal-backdrop';
-    backdrop.innerHTML =
-      '<div id="jl-modal">' +
-        '<span class="jl-modal-icon">ℹ️</span>' +
-        '<div class="jl-modal-title">Notice</div>' +
-        '<div class="jl-modal-body"></div>' +
-        '<div class="jl-modal-btns"></div>' +
-      '</div>';
-    D.body.appendChild(backdrop);
-    backdrop.addEventListener('click', function(e){
-      if(e.target === backdrop) closeModal();
-    });
-    modalEl = D.getElementById('jl-modal');
-  }
-
-  /* ── Bottom nav ── */
-  navEl = D.getElementById('jl-nav');
-  if(!navEl){
-    navEl = D.createElement('nav');
-    navEl.id = 'jl-nav';
-    navEl.setAttribute('role','navigation');
-    navEl.setAttribute('aria-label','Main navigation');
-    var navHTML = '';
-    TABS.forEach(function(t, i){
-      navHTML +=
-        '<button class="jl-tab-btn'+(i===0?' active':'')+'" ' +
-                'aria-label="'+t.label+'" ' +
-                'data-tab-idx="'+t.idx+'" ' +
-                'data-nav-i="'+i+'">' +
-          '<span class="jl-tab-icon" aria-hidden="true">'+t.icon+'</span>' +
-          '<span class="jl-tab-label">'+t.label+'</span>' +
-        '</button>';
-    });
-    navEl.innerHTML = navHTML;
-    D.body.appendChild(navEl);
-
-    navEl.querySelectorAll('.jl-tab-btn').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        var idx = parseInt(btn.getAttribute('data-tab-idx'));
-        var rect = btn.getBoundingClientRect();
-        var cx = rect.left + rect.width/2;
-        if(idx === -1){
-          if(moreOpen){ closeMore(); } else { openMore(); }
-        } else {
-          closeMore();
-          switchTab(idx, cx);
+          // Hide original toast
+          toast.style.display = 'none';
+          showJLModal(type === 'success' ? '✅ Success' :
+                      type === 'error'   ? '❌ Error'   :
+                      type === 'warn'    ? '⚠️ Warning' : 'ℹ️ Info',
+                      text.replace(/[✅❌⚠️ℹ️]/g, '').trim(), type);
         }
       });
     });
+  });
+
+  alertObserver.observe(document.body, { childList: true, subtree: true });
+}
+
+function showJLModal(title, message, type) {
+  if (!modal || !modalTitle || !modalBody) return;
+  modalTitle.textContent = title;
+  var cls = 'jl-alert jl-alert-' + type;
+  var icons = { success: '✅', error: '❌', warn: '⚠️', info: 'ℹ️' };
+  var icon = icons[type] || 'ℹ️';
+  modalBody.innerHTML = '<div class="' + cls + '">' +
+    '<div class="jl-alert-icon">' + icon + '</div>' +
+    '<div class="jl-alert-text">' +
+    '  <div class="jl-alert-body">' + message + '</div>' +
+    '</div>' +
+    '</div>' +
+    '<button onclick="document.getElementById(\'jl-modal-overlay\').classList.remove(\'active\');' +
+    'document.body.style.overflow=\'\';" style="' +
+    'width:100%;margin-top:14px;padding:13px;border-radius:10px;' +
+    'background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);' +
+    'color:#e2e8f0;font-size:0.92rem;font-weight:700;cursor:pointer;' +
+    'font-family:Space Grotesk,sans-serif;">OK</button>';
+  openModal();
+}
+
+// ── Sync active tab with Streamlit's actual state ─────────────────────────
+function syncActiveTab() {
+  var stTabs = getStreamlitTabs();
+  if (!stTabs || stTabs.length === 0) return;
+  stTabs.forEach(function(tab, i) {
+    if (tab.getAttribute('aria-selected') === 'true' ||
+        tab.classList.contains('active') ||
+        tab.getAttribute('data-active') === 'true') {
+      if (i !== currentTab) {
+        currentTab = i;
+        navItems.forEach(function(item, j) {
+          item.classList.toggle('active', j === i);
+        });
+      }
+    }
+  });
+}
+
+// ── Keyboard: physical back button / Escape ───────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ── Resize handler ────────────────────────────────────────────────────────
+window.addEventListener('resize', function() {
+  isMobile = window.innerWidth <= 768;
+  if (bottomNav) bottomNav.style.display = isMobile ? 'block' : 'none';
+  if (fab)       fab.style.display = isMobile ? 'flex' : 'none';
+});
+
+// ── Init sequence ─────────────────────────────────────────────────────────
+// Set first tab active
+if (navItems.length > 0) navItems[0].classList.add('active');
+
+// Start alert interception
+interceptAlerts();
+
+// Periodically sync with Streamlit tab state
+setInterval(syncActiveTab, 800);
+
+// Prevent double-tap zoom
+var lastTouch = 0;
+document.addEventListener('touchend', function(e) {
+  var now = Date.now();
+  if (now - lastTouch < 300) {
+    e.preventDefault();
   }
-}
+  lastTouch = now;
+}, { passive: false });
 
-/* ═══════════════════════════════════════════════
-   WATCH FOR STREAMLIT TAB STATE CHANGES
-   (sync active tab when Streamlit re-renders)
-═══════════════════════════════════════════════ */
-function watchTabState(){
-  var tabObserver = new P.MutationObserver(function(){
-    var list = D.querySelector('[data-baseweb="tab-list"]');
-    if(!list) return;
-    var active = list.querySelector('[aria-selected="true"]');
-    if(!active) return;
-    var allTabs = list.querySelectorAll('[role="tab"]');
-    allTabs.forEach(function(t,i){
-      if(t===active && i!==activeTab){
-        activeTab = i;
-        updateNavUI();
-      }
-    });
-  });
-  tabObserver.observe(D.body, {childList:true, subtree:true, attributes:true,
-                                attributeFilter:['aria-selected']});
-}
-
-/* ═══════════════════════════════════════════════
-   SCROLL HIDE/SHOW NAV ON FAST SCROLL
-═══════════════════════════════════════════════ */
-function initScrollBehavior(){
-  var lastScrollY = 0, ticking = false, hideTimer;
-
-  D.addEventListener('scroll', function(){
-    if(ticking) return;
-    P.requestAnimationFrame(function(){
-      var cur = D.documentElement.scrollTop || D.body.scrollTop;
-      if(!navEl){ lastScrollY=cur; ticking=false; return; }
-      if(cur > lastScrollY + 60){
-        /* Scrolling down fast — hide nav briefly */
-        navEl.classList.add('hidden');
-        clearTimeout(hideTimer);
-        hideTimer = P.setTimeout(function(){
-          navEl.classList.remove('hidden');
-        }, 2000);
-      } else if(cur < lastScrollY - 10){
-        navEl.classList.remove('hidden');
-      }
-      lastScrollY = cur;
-      ticking = false;
-    });
-    ticking = true;
-  }, {passive:true});
-}
-
-/* ═══════════════════════════════════════════════
-   MOUNT / UNMOUNT
-═══════════════════════════════════════════════ */
-function mount(){
-  if(mounted) return;
-  injectCSS();
-  patchViewport();
-  buildDOM();
-  initPullToRefresh();
-  interceptAlerts();
-  watchTabState();
-  initScrollBehavior();
-  updateNavUI();
-  mounted = true;
-}
-
-function unmount(){
-  if(!mounted) return;
-  ['jl-nav','jl-overlay','jl-more-drawer','jl-modal-backdrop',
-   'jl-transition','jl-ripple','jl-ptr'].forEach(function(id){
-    var el = D.getElementById(id);
-    if(el) el.remove();
-  });
-  var css = D.getElementById('jl-mobile-css');
-  if(css) css.remove();
-  mounted = false;
-  navEl = overlayEl = moreDrawerEl = transitionEl = rippleEl = modalEl = null;
-}
-
-/* ─── Bootstrap ─── */
-function boot(){
-  if(!D || !D.body){ P.setTimeout(boot, 100); return; }
-  mount();
-}
-
-if(D.readyState === 'complete' || D.readyState === 'interactive'){
-  boot();
-} else {
-  D.addEventListener('DOMContentLoaded', boot);
-}
+// Prevent pinch zoom
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
 
 })();
 </script>
-</body>
-</html>
 """
+
+
+def _build_nav_items() -> str:
+    """Build HTML for nav items."""
+    items = []
+    for i, tab in enumerate(_TABS):
+        items.append(
+            f'<button class="jl-nav-item" '
+            f'data-index="{i}" '
+            f'aria-label="{tab["label"]}" '
+            f'title="{tab["label"]}">'
+            f'<span class="jl-nav-icon">{tab["icon"]}</span>'
+            f'<span class="jl-nav-label">{tab["short"]}</span>'
+            f'</button>'
+        )
+    return "\n    ".join(items)
 
 
 def inject_mobile_nav():
     """
-    Call this in main() after ui.apply_custom_css() and before st.tabs([...]).
-    Renders a 0×0 invisible iframe that hooks the mobile nav into the parent Streamlit document.
-    Only activates on screens < 768 px.
+    Call this once in main() after page config.
+    Injects the complete mobile navigation layer.
     """
-    components.html(_MOBILE_NAV_HTML, height=0, scrolling=False)
+    nav_html = _MOBILE_HTML.replace("{NAV_ITEMS}", _build_nav_items())
+    full_html = _MOBILE_CSS + nav_html + _MOBILE_JS
+
+    components.html(full_html, height=1, scrolling=False)

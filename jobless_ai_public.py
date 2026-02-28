@@ -5554,44 +5554,85 @@ def _load_landing_page() -> str:
 
 def _show_landing_page():
     """Render the full-page landing experience inside Streamlit."""
-    # Hide all Streamlit chrome so the landing page looks native
+
+    # ── 1. Aggressively hide ALL Streamlit chrome and remove all padding ──────
     st.markdown("""
         <style>
-            /* Hide Streamlit header, footer, and sidebar toggle */
             header[data-testid="stHeader"],
             footer,
             #MainMenu,
             [data-testid="collapsedControl"],
-            [data-testid="stToolbar"] { display: none !important; }
+            [data-testid="stToolbar"],
+            [data-testid="stDecoration"],
+            [data-testid="stStatusWidget"] { display: none !important; }
 
-            /* Remove all padding/margin so the iframe fills the viewport */
-            .main > div:first-child { padding: 0 !important; }
-            .block-container {
+            /* Kill every layer of padding Streamlit adds */
+            html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+            .main, .block-container,
+            [data-testid="stAppViewContainer"],
+            [data-testid="stAppViewContainer"] > section.main,
+            [data-testid="stVerticalBlock"],
+            [data-testid="stVerticalBlockBorderWrapper"],
+            div[data-testid="stMainBlockContainer"] {
                 padding: 0 !important;
+                margin: 0 !important;
                 max-width: 100% !important;
             }
-            [data-testid="stAppViewContainer"] > section.main {
-                padding: 0 !important;
+
+            /* Make the iframe fill the full viewport */
+            iframe {
+                display: block !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                border: none !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                z-index: 9999 !important;
             }
         </style>
     """, unsafe_allow_html=True)
 
     html_content = _load_landing_page()
 
-    # Inject a small script so CTA clicks navigate the parent window (not the iframe)
-    # This rewrites ?page=app links to use window.top.location
-    inject_nav_script = """
+    # ── 2. Build the navigation + resize script to inject ────────────────────
+    # Because Streamlit iframes are sandboxed, window.top.location is blocked.
+    # Instead we use postMessage to communicate with the parent, and a tiny
+    # <script> in the parent (injected via st.markdown) listens and sets
+    # window.location.search = "?page=app" on the top frame.
+    #
+    # We also make all internal anchor links (e.g. #features) use
+    # document-level scroll so the page behaves correctly inside the iframe.
+    inject_script = """
     <script>
     (function() {
-        // After DOM is ready, patch all ?page=app links to navigate the top frame
+        // ── Auto-resize: tell parent how tall the page is so the iframe grows ──
+        function sendHeight() {
+            var h = Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight
+            );
+            window.parent.postMessage({ type: 'JOBLESS_RESIZE', height: h }, '*');
+        }
+        // Run on load and whenever the DOM changes
+        window.addEventListener('load', sendHeight);
+        var ro = new ResizeObserver(sendHeight);
+        ro.observe(document.body);
+
+        // ── Navigation: route "?page=app" links via postMessage ──────────────
         function patchLinks() {
-            document.querySelectorAll('a[href="?page=app"]').forEach(function(a) {
-                a.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    window.top.location.href = window.top.location.pathname + '?page=app';
-                });
+            document.querySelectorAll('a').forEach(function(a) {
+                var href = a.getAttribute('href') || '';
+                if (href === '?page=app' || href.endsWith('?page=app')) {
+                    a.href = 'javascript:void(0)';
+                    a.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        window.parent.postMessage({ type: 'JOBLESS_NAV', page: 'app' }, '*');
+                    });
+                }
             });
         }
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', patchLinks);
         } else {
@@ -5601,12 +5642,65 @@ def _show_landing_page():
     </script>
     """
 
-    # Insert the navigation script just before </body>
-    html_with_nav = html_content.replace(
-        "</body>", inject_nav_script + "\n</body>")
+    # ── 3. Parent-side listener (runs in the Streamlit page, not the iframe) ─
+    # This receives postMessage events and either resizes the iframe or
+    # navigates the top-level window to ?page=app.
+    parent_script = """
+    <script>
+    (function() {
+        window.addEventListener('message', function(e) {
+            if (!e.data || typeof e.data !== 'object') return;
 
-    # Render at a generous height; scrolling=True lets the page scroll inside the iframe
-    components.html(html_with_nav, height=7000, scrolling=True)
+            if (e.data.type === 'JOBLESS_NAV' && e.data.page === 'app') {
+                // Navigate the top-level Streamlit page
+                var url = new URL(window.location.href);
+                url.searchParams.set('page', 'app');
+                window.location.href = url.toString();
+            }
+
+            if (e.data.type === 'JOBLESS_RESIZE' && e.data.height) {
+                // Find our iframe and set its height to match the content
+                var iframes = document.querySelectorAll('iframe');
+                iframes.forEach(function(f) {
+                    // Only target the landing-page iframe (tallest one)
+                    if (e.data.height > 500) {
+                        f.style.height = e.data.height + 'px';
+                    }
+                });
+            }
+        });
+    })();
+    </script>
+    """
+
+    # Inject the parent-side script into the Streamlit page DOM
+    st.markdown(parent_script, unsafe_allow_html=True)
+
+    # ── 5. CSS patch: fix 100vh inside iframe (causes black hero screen) ─────
+    # Inside an iframe, 100vh = iframe's own height, not the full page content.
+    # We override #hero to auto-size so the hero content is actually visible.
+    css_patch = """
+    <style>
+        /* Fix: 100vh inside iframe equals only the iframe height, not content.
+           Override to auto so the hero section renders its full content. */
+        #hero {
+            min-height: 900px !important;
+            height: auto !important;
+        }
+        html, body {
+            height: auto !important;
+            overflow-x: hidden !important;
+        }
+    </style>
+    """
+
+    # Inject CSS fix into <head>, nav script before </body>
+    html_with_script = html_content.replace("</head>", css_patch + "\n</head>")
+    html_with_script = html_with_script.replace("</body>", inject_script + "\n</body>")
+
+    # ── 4. Render — use a very large height so all sections are reachable ────
+    # scrolling=True is critical: it lets the user scroll the landing page.
+    components.html(html_with_script, height=8000, scrolling=True)
 
 
 def main():

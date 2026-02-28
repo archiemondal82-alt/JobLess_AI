@@ -5606,7 +5606,7 @@ def _show_landing_page():
     inject_script = """
     <script>
     (function() {
-        // ── Auto-resize: tell parent how tall the page is so the iframe grows ──
+        // ── Auto-resize: tell parent how tall the page is ──────────────────
         function sendHeight() {
             var h = Math.max(
                 document.body.scrollHeight,
@@ -5614,30 +5614,29 @@ def _show_landing_page():
             );
             window.parent.postMessage({ type: 'JOBLESS_RESIZE', height: h }, '*');
         }
-        // Run on load and whenever the DOM changes
         window.addEventListener('load', sendHeight);
         var ro = new ResizeObserver(sendHeight);
         ro.observe(document.body);
 
         // ── Navigation: route "?page=app" links via postMessage ──────────────
-        function patchLinks() {
-            document.querySelectorAll('a').forEach(function(a) {
-                var href = a.getAttribute('href') || '';
-                if (href === '?page=app' || href.endsWith('?page=app')) {
-                    a.href = 'javascript:void(0)';
-                    a.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        window.parent.postMessage({ type: 'JOBLESS_NAV', page: 'app' }, '*');
-                    });
-                }
-            });
+        // We intercept clicks without changing href (avoids javascript:void(0)
+        // in the status bar) by using event capture on the document.
+        function isAppLink(el) {
+            var a = el.closest ? el.closest('a') : null;
+            if (!a) return null;
+            var href = a.getAttribute('href') || '';
+            if (href === '?page=app' || href.endsWith('?page=app')) return a;
+            return null;
         }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', patchLinks);
-        } else {
-            patchLinks();
-        }
+        document.addEventListener('click', function(e) {
+            var a = isAppLink(e.target);
+            if (a) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                window.parent.postMessage({ type: 'JOBLESS_NAV', page: 'app' }, '*');
+            }
+        }, true);  // capture phase — fires before any other handler
     })();
     </script>
     """
@@ -5676,20 +5675,57 @@ def _show_landing_page():
     # Inject the parent-side script into the Streamlit page DOM
     st.markdown(parent_script, unsafe_allow_html=True)
 
-    # ── 5. CSS patch: fix 100vh inside iframe (causes black hero screen) ─────
-    # Inside an iframe, 100vh = iframe's own height, not the full page content.
-    # We override #hero to auto-size so the hero content is actually visible.
+    # ── 5. CSS patch: fix hero layout collapse inside iframe ──────────────────
+    # Problems inside Streamlit's sandboxed iframe:
+    #
+    # A) `min-height: 100vh` on #hero = only the iframe's tiny internal height,
+    #    so the black background fills the iframe but content collapses.
+    #
+    # B) `.hero-inner { flex: 1 }` collapses to 0 height when the parent #hero
+    #    has no explicit height (flex children need a sized parent to stretch).
+    #
+    # C) `position: fixed` on nav is relative to the iframe viewport, not the
+    #    browser window, so it overlaps content correctly but needs no change.
+    #
+    # Fix: give #hero an explicit large min-height, make .hero-inner use
+    # min-height instead of flex:1, and ensure body/html don't clip content.
     css_patch = """
     <style>
-        /* Fix: 100vh inside iframe equals only the iframe height, not content.
-           Override to auto so the hero section renders its full content. */
-        #hero {
-            min-height: 900px !important;
-            height: auto !important;
-        }
+        /* ── IFRAME COMPATIBILITY FIXES ── */
+
         html, body {
             height: auto !important;
+            min-height: 100% !important;
             overflow-x: hidden !important;
+        }
+
+        /* Fix A+B: hero flex collapse.
+           Use min-height instead of relying on flex:1 from a 100vh parent. */
+        #hero {
+            min-height: 820px !important;
+            height: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .hero-inner {
+            flex: unset !important;
+            display: flex !important;
+            align-items: center !important;
+            padding-top: 100px !important;
+            padding-bottom: 60px !important;
+            min-height: 700px !important;
+            gap: 0 !important;
+        }
+
+        /* Ensure hero-left and hero-right take space */
+        .hero-left, .hero-right {
+            flex: 1 !important;
+        }
+
+        /* Fix nav link href (remove javascript:void status bar flash) */
+        a[href="javascript:void(0)"] {
+            cursor: pointer !important;
         }
     </style>
     """

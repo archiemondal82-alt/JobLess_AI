@@ -18,6 +18,7 @@ import io as _io
 import datetime
 import streamlit as st
 import streamlit.components.v1 as components
+from mobile_nav import inject_mobile_nav
 import fitz  # PyMuPDF
 import json
 import pandas as pd
@@ -31,7 +32,6 @@ import io
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
-from mobile_nav import inject_mobile_nav
 
 # ── Provider SDK imports (graceful fallback if not installed) ──────────────
 try:
@@ -3672,7 +3672,7 @@ def main():
         page_title="JobLess AI",
         page_icon="🚀",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
     )
 
     init_session_state()

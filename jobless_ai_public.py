@@ -1836,7 +1836,7 @@ class UIComponents:
         """
         st.markdown(css, unsafe_allow_html=True)
 
-        # ── Custom cursor + hidden-nav wiring ─────────────────────────────
+        # ── Custom cursor + hidden-nav wiring + hamburger ─────────────────
         cursor_js = """
         <script>
         (function() {
@@ -1851,6 +1851,7 @@ class UIComponents:
                     if (P.__cursorRunning && pdoc.getElementById('ns-dot')) return;
                     P.__cursorRunning = true;
 
+                    // ── CSS: cursor + ghost hide + hamburger ──────────────
                     if (!pdoc.getElementById('nexstep-injected-css')) {
                         var s = pdoc.createElement('style'); s.id = 'nexstep-injected-css';
                         s.textContent = [
@@ -1859,11 +1860,83 @@ class UIComponents:
                             '#ns-dot.ns-click { width:5px!important; height:5px!important; background:#a855f7!important; box-shadow:0 0 12px #a855f7!important; }',
                             '#ns-ring { position:fixed!important; left:0!important; top:0!important; width:34px!important; height:34px!important; border:1.5px solid rgba(0,210,255,.6)!important; border-radius:50%!important; pointer-events:none!important; z-index:2147483646!important; will-change:transform!important; transition:width .2s ease,height .2s ease,border-color .2s ease,background .2s ease!important; }',
                             '#ns-ring.ns-hover { width:56px!important; height:56px!important; border-color:#a855f7!important; background:rgba(168,85,247,.06)!important; }',
-                            '.jl-ghost-btn { position:fixed!important; top:-9999px!important; left:-9999px!important; width:1px!important; height:1px!important; overflow:hidden!important; opacity:0!important; pointer-events:none!important; }'
+                            '.jl-ghost-btn { position:fixed!important; top:-9999px!important; left:-9999px!important; width:1px!important; height:1px!important; overflow:hidden!important; opacity:0!important; pointer-events:none!important; }',
+                            /* hamburger button */
+                            '#jl-hbg { position:fixed!important; top:14px!important; right:14px!important; z-index:2147483640!important; width:42px!important; height:42px!important; background:rgba(6,12,24,0.65)!important; backdrop-filter:blur(12px)!important; -webkit-backdrop-filter:blur(12px)!important; border:1px solid rgba(0,210,255,0.25)!important; border-radius:11px!important; display:flex!important; flex-direction:column!important; align-items:center!important; justify-content:center!important; gap:5px!important; cursor:pointer!important; transition:all 0.2s ease!important; box-shadow:0 4px 20px rgba(0,0,0,0.5)!important; }',
+                            '#jl-hbg:hover { background:rgba(0,210,255,0.15)!important; border-color:rgba(0,210,255,0.6)!important; box-shadow:0 0 20px rgba(0,210,255,0.25)!important; }',
+                            '#jl-hbg span { display:block!important; width:17px!important; height:1.5px!important; background:#00d2ff!important; border-radius:2px!important; transition:all 0.25s ease!important; pointer-events:none!important; }',
+                            '#jl-hbg.open span:nth-child(1) { transform:translateY(6.5px) rotate(45deg)!important; }',
+                            '#jl-hbg.open span:nth-child(2) { opacity:0!important; transform:scaleX(0)!important; }',
+                            '#jl-hbg.open span:nth-child(3) { transform:translateY(-6.5px) rotate(-45deg)!important; }',
+                            /* nav panel */
+                            '#jl-panel { position:fixed!important; top:0!important; right:0!important; width:230px!important; height:100vh!important; background:rgba(5,9,18,0.97)!important; backdrop-filter:blur(24px)!important; -webkit-backdrop-filter:blur(24px)!important; border-left:1px solid rgba(0,210,255,0.12)!important; z-index:2147483639!important; transform:translateX(100%)!important; transition:transform 0.3s cubic-bezier(0.16,1,0.3,1)!important; padding:68px 16px 24px!important; display:flex!important; flex-direction:column!important; gap:3px!important; box-shadow:-8px 0 40px rgba(0,0,0,0.6)!important; overflow-y:auto!important; }',
+                            '#jl-panel.open { transform:translateX(0)!important; }',
+                            '#jl-overlay { position:fixed!important; inset:0!important; z-index:2147483638!important; display:none!important; }',
+                            '#jl-overlay.open { display:block!important; }',
+                            '.jl-nlbl { font-family:monospace!important; font-size:0.58rem!important; letter-spacing:0.2em!important; text-transform:uppercase!important; color:rgba(0,210,255,0.35)!important; margin:0 0 10px 4px!important; }',
+                            '.jl-ni { display:flex!important; align-items:center!important; gap:10px!important; padding:10px 14px!important; border-radius:10px!important; border:1px solid transparent!important; cursor:pointer!important; font-family:sans-serif!important; font-size:0.88rem!important; font-weight:500!important; color:#64748b!important; transition:all 0.18s ease!important; margin-bottom:2px!important; }',
+                            '.jl-ni:hover { background:rgba(0,210,255,0.08)!important; border-color:rgba(0,210,255,0.18)!important; color:#e2e8f0!important; }',
+                            '.jl-ni.active { background:rgba(0,210,255,0.11)!important; border-color:rgba(0,210,255,0.28)!important; color:#00d2ff!important; font-weight:600!important; }'
                         ].join('');
                         pdoc.head.appendChild(s);
                     }
 
+                    // ── Build hamburger in parent doc ─────────────────────
+                    if (!pdoc.getElementById('jl-hbg')) {
+                        var NAV_DEFS = [
+                            ['home','🏠','Home'],['career','📊','Career Analysis'],
+                            ['resume','📝','Resume Builder'],['interview','🎤','Mock Interview'],
+                            ['pyq','📂','PYQ Hub'],['resources','📚','Resources'],
+                            ['compare','⚖️','Compare'],['history','🕒','History']
+                        ];
+                        var curPage = (new URLSearchParams(P.location.search)).get('page') || 'home';
+
+                        var overlay = pdoc.createElement('div'); overlay.id = 'jl-overlay';
+                        var panel   = pdoc.createElement('div'); panel.id   = 'jl-panel';
+                        var lbl     = pdoc.createElement('div'); lbl.className = 'jl-nlbl'; lbl.textContent = 'Navigation';
+                        panel.appendChild(lbl);
+                        NAV_DEFS.forEach(function(nd) {
+                            var item = pdoc.createElement('div');
+                            item.className = 'jl-ni' + (nd[0] === curPage ? ' active' : '');
+                            item.setAttribute('data-page', nd[0]);
+                            item.innerHTML = nd[1] + '&nbsp;&nbsp;' + nd[2];
+                            item.addEventListener('click', function() {
+                                P.postMessage({type:'jl-nav', page:nd[0]}, '*');
+                                try { P.history.pushState({page:nd[0]},'','?page='+nd[0]); } catch(e){}
+                                closePanel();
+                            });
+                            panel.appendChild(item);
+                        });
+
+                        var hbg = pdoc.createElement('div'); hbg.id = 'jl-hbg';
+                        hbg.innerHTML = '<span></span><span></span><span></span>';
+
+                        function closePanel() {
+                            hbg.classList.remove('open');
+                            panel.classList.remove('open');
+                            overlay.classList.remove('open');
+                        }
+                        hbg.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            panel.classList.contains('open') ? closePanel() : (hbg.classList.add('open'), panel.classList.add('open'), overlay.classList.add('open'));
+                        });
+                        overlay.addEventListener('click', closePanel);
+
+                        // browser back/forward → update active item
+                        P.addEventListener('popstate', function(e) {
+                            var pg = (e.state && e.state.page) || (new URLSearchParams(P.location.search)).get('page') || 'home';
+                            P.postMessage({type:'jl-nav', page:pg}, '*');
+                            pdoc.querySelectorAll('.jl-ni').forEach(function(el) {
+                                el.classList.toggle('active', el.getAttribute('data-page') === pg);
+                            });
+                        });
+
+                        pdoc.body.appendChild(overlay);
+                        pdoc.body.appendChild(panel);
+                        pdoc.body.appendChild(hbg);
+                    }
+
+                    // ── Cursor elements ───────────────────────────────────
                     if (pdoc.getElementById('ns-dot')) return;
                     var dot = pdoc.createElement('div'); dot.id = 'ns-dot'; pdoc.body.appendChild(dot);
                     var ring = pdoc.createElement('div'); ring.id = 'ns-ring'; pdoc.body.appendChild(ring);
@@ -1871,8 +1944,8 @@ class UIComponents:
                     pdoc.addEventListener('mousemove', function(e){ mx=e.clientX; my=e.clientY; dot.style.transform='translate3d('+(mx-5)+'px,'+(my-5)+'px,0)'; }, {passive:true});
                     P.addEventListener('message', function(e){ if(e.data&&e.data.type==='ns-move'){ mx=e.data.x; my=e.data.y; dot.style.transform='translate3d('+(mx-5)+'px,'+(my-5)+'px,0)'; } });
 
-                    // Tag & hide ghost nav buttons using MutationObserver
-                    var NAV_PAGES = ['career','history','compare','resources','resume','interview','pyq'];
+                    // ── Ghost nav buttons ─────────────────────────────────
+                    var NAV_PAGES = ['home','career','history','compare','resources','resume','interview','pyq'];
                     function processNavBtns() {
                         pdoc.querySelectorAll('button').forEach(function(btn) {
                             var t = btn.textContent.replace(/\\s+/g,'').toLowerCase();
@@ -1891,11 +1964,14 @@ class UIComponents:
                         P.__jlNavObserver.observe(pdoc.body, {childList:true, subtree:true});
                     }
 
-                    // Route postMessage to tagged ghost buttons
+                    // Route postMessage → ghost button click + update hamburger active state
                     P.addEventListener('message', function(e) {
                         if (e.data && e.data.type === 'jl-nav') {
                             var btn = pdoc.querySelector('[data-jl-nav="' + e.data.page + '"]');
                             if (btn) btn.click();
+                            pdoc.querySelectorAll('.jl-ni').forEach(function(el) {
+                                el.classList.toggle('active', el.getAttribute('data-page') === e.data.page);
+                            });
                         }
                     });
 
@@ -4267,91 +4343,6 @@ def main():
     qp = st.query_params.get("page", "home")
     if qp != st.session_state.get('current_page', 'home'):
         st.session_state['current_page'] = qp
-
-    # ── Floating hamburger nav (right side) via components.html ───────────
-    page_now = st.session_state.get('current_page', 'home')
-    nav_defs = [
-        ('home',      '🏠', 'Home'),
-        ('career',    '📊', 'Career Analysis'),
-        ('resume',    '📝', 'Resume Builder'),
-        ('interview', '🎤', 'Mock Interview'),
-        ('pyq',       '📂', 'PYQ Hub'),
-        ('resources', '📚', 'Resources'),
-        ('compare',   '⚖️',  'Compare'),
-        ('history',   '🕒', 'History'),
-    ]
-    nav_items_html = ""
-    for key, icon, label in nav_defs:
-        active_cls = ' active' if page_now == key else ''
-        nav_items_html += f'<div class="nav-item{active_cls}" data-page="{key}">{icon}&nbsp;&nbsp;{label}</div>\n'
-
-    hamburger_comp = f"""
-<!DOCTYPE html><html><head><style>
-*{{margin:0;padding:0;box-sizing:border-box;}}
-html,body{{background:transparent;overflow:hidden;}}
-#jl-hamburger{{
-  position:fixed;top:14px;right:14px;z-index:9999;
-  width:42px;height:42px;
-  background:rgba(6,12,24,0.6);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(0,210,255,0.25);border-radius:11px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
-  cursor:pointer;transition:all 0.2s ease;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5);
-}}
-#jl-hamburger:hover{{background:rgba(0,210,255,0.14);border-color:rgba(0,210,255,0.55);box-shadow:0 0 18px rgba(0,210,255,0.25);}}
-#jl-hamburger span{{display:block;width:17px;height:1.5px;background:#00d2ff;border-radius:2px;transition:all 0.25s ease;}}
-#jl-hamburger.open span:nth-child(1){{transform:translateY(6.5px) rotate(45deg);}}
-#jl-hamburger.open span:nth-child(2){{opacity:0;transform:scaleX(0);}}
-#jl-hamburger.open span:nth-child(3){{transform:translateY(-6.5px) rotate(-45deg);}}
-#jl-nav-panel{{
-  position:fixed;top:0;right:0;width:230px;height:100vh;
-  background:rgba(5,9,18,0.96);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border-left:1px solid rgba(0,210,255,0.12);z-index:9998;
-  transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
-  padding:68px 16px 24px 16px;display:flex;flex-direction:column;gap:3px;
-  box-shadow:-8px 0 40px rgba(0,0,0,0.6);overflow-y:auto;
-}}
-#jl-nav-panel.open{{transform:translateX(0);}}
-.nav-label{{font-family:monospace;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,210,255,0.35);margin:0 0 10px 4px;}}
-.nav-item{{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid transparent;cursor:pointer;font-family:sans-serif;font-size:0.88rem;font-weight:500;color:#64748b;transition:all 0.18s ease;}}
-.nav-item:hover{{background:rgba(0,210,255,0.08);border-color:rgba(0,210,255,0.18);color:#e2e8f0;}}
-.nav-item.active{{background:rgba(0,210,255,0.11);border-color:rgba(0,210,255,0.28);color:#00d2ff;font-weight:600;}}
-#jl-overlay{{position:fixed;inset:0;z-index:9997;display:none;}}
-#jl-overlay.open{{display:block;}}
-</style></head><body>
-<div id="jl-overlay"></div>
-<div id="jl-nav-panel"><div class="nav-label">Navigation</div>{nav_items_html}</div>
-<div id="jl-hamburger"><span></span><span></span><span></span></div>
-<script>
-var btn=document.getElementById('jl-hamburger');
-var panel=document.getElementById('jl-nav-panel');
-var overlay=document.getElementById('jl-overlay');
-function closeMenu(){{btn.classList.remove('open');panel.classList.remove('open');overlay.classList.remove('open');}}
-btn.addEventListener('click',function(e){{
-  e.stopPropagation();
-  panel.classList.contains('open')?closeMenu():(btn.classList.add('open'),panel.classList.add('open'),overlay.classList.add('open'));
-}});
-overlay.addEventListener('click',closeMenu);
-document.querySelectorAll('.nav-item').forEach(function(item){{
-  item.addEventListener('click',function(){{
-    var page=item.getAttribute('data-page');
-    window.parent.postMessage({{type:'jl-nav',page:page}},'*');
-    // also update URL for browser back/forward
-    try{{window.parent.history.pushState({{page:page}},'','?page='+page);}}catch(e){{}}
-    closeMenu();
-  }});
-}});
-// Listen for browser popstate (back/forward)
-window.parent.addEventListener('popstate',function(e){{
-  var p=(e.state&&e.state.page)||new URLSearchParams(window.parent.location.search).get('page')||'home';
-  window.parent.postMessage({{type:'jl-nav',page:p}},'*');
-}});
-</script>
-</body></html>
-"""
-    components.html(hamburger_comp, height=60, scrolling=False)
 
     # Sidebar (returns settings needed by tabs)
     selected_provider, selected_model, analysis_depth, include_learning_path, include_interview_prep = \

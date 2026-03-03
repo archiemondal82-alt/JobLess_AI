@@ -64,21 +64,18 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         html, body {{ background: #0a0f1a !important; background-color: #0a0f1a !important; overflow: hidden; cursor: none !important; }}
         canvas {{ cursor: none !important; }}
 
-        
+        .wrapper {{
+          width: 100%;
+          height: {height}px;
+          background: linear-gradient(135deg, #0a0f1a 0%, #0d1526 50%, #0a0f1a 100%);
+          position: relative;
+          overflow: hidden;
           border-radius: 16px;
           display: flex;
           border: 1px solid rgba(0, 210, 255, 0.12);
-          box-s..wrapper {{
-          width: 100%;
-          height: {height}px;
-          background: #0a0f1a;
-          position: relative;
-          overflow: hidden;
-          border-radius: 0;
-          display: flex;
-          border: none;
-          box-shadow: none;
+          box-shadow: 0 0 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
         }}
+
         /* Ambient glow */
         .glow-left {{
           position: absolute;
@@ -2215,6 +2212,7 @@ document.addEventListener('mousemove', function(e) {
 </script>
 </body>
 </html>""", height=310, scrolling=False)
+
 
 
 # ==================== TAB RENDER FUNCTIONS ====================

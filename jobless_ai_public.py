@@ -1433,12 +1433,21 @@ class UIComponents:
             @keyframes scaleIn { from{transform:perspective(600px) scale(0.88) rotateX(8deg);opacity:0} to{transform:perspective(600px) scale(1) rotateX(0deg);opacity:1} }
             @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
-            /* ── APP BACKGROUND ── */
-            .stApp { background: #060c18 !important; color: white !important; font-family: 'Space Grotesk', sans-serif !important; cursor: none !important; }
+            /* ── APP BACKGROUND — aggressive cloud-safe rules ── */
+            html, body { background: #060c18 !important; background-color: #060c18 !important; }
+            .stApp, .stApp > div, [data-testid="stAppViewContainer"],
+            [data-testid="stAppViewBlockContainer"],
+            [data-testid="stMain"], [data-testid="stMainBlockContainer"],
+            .main, .block-container, section.main > div {
+                background: #060c18 !important;
+                background-color: #060c18 !important;
+                color: white !important;
+            }
+            .stApp { font-family: 'Space Grotesk', sans-serif !important; cursor: none !important; }
             .main .block-container { padding-top: 0 !important; padding-left: 2rem !important; padding-right: 2rem !important; max-width: 100% !important; margin-top: -30px !important; }
             /* Kill Streamlit's default top header gap */
             [data-testid="stAppViewContainer"] > section > div:first-child { padding-top: 0 !important; }
-            header[data-testid="stHeader"] { height: 0 !important; min-height: 0 !important; visibility: hidden !important; }
+            header[data-testid="stHeader"] { height: 0 !important; min-height: 0 !important; visibility: hidden !important; background: #060c18 !important; }
             #root > div:first-child { padding-top: 0 !important; }
             .stApp > header { display: none !important; }
             div[data-testid="stToolbar"] { display: none !important; }
@@ -4183,28 +4192,16 @@ def main():
             st.rerun()
     # (MutationObserver in cursor_js hides these buttons and wires them to postMessage)
 
-    # Home: show full heading + hero text
+    # Home: spline scene is the hero — no duplicate heading needed
     if page == 'home':
-        st.markdown("""
-        <style>@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}</style>
-        <div style="animation:fadeInUp 0.6s ease-out;padding:2px 0 0 0;">
-            <h1 style="font-family:'Space Grotesk',sans-serif;font-size:3rem;font-weight:800;
-                       color:#00d2ff;letter-spacing:-0.03em;line-height:1;
-                       text-shadow:0 0 40px rgba(0,210,255,0.4),0 0 80px rgba(0,210,255,0.15);
-                       margin:0 0 6px 0;">JOBLESS AI</h1>
-            <p style="color:#64748b;font-family:'Inter',sans-serif;font-size:0.92rem;
-                      margin:0 0 8px 0;letter-spacing:0.01em;">
-                Your AI-powered career companion — analyze career paths, build ATS resumes, practice mock interviews, and ace your dream job.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        pass  # heading shown inside spline iframe
 
     # Robot always visible — on home it's the hero, on sections it's the compact helper
     render_spline_scene(
         scene_url="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
         title="Interactive 3D",
         description="Meet your AI career assistant. Powered by cutting-edge AI models, JobLess AI helps you navigate your career journey with confidence.",
-        height=280 if page == 'home' else 220,
+        height=350 if page == 'home' else 220,
         show_get_started=(page == 'home')
     )
 

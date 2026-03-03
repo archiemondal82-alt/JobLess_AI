@@ -178,12 +178,15 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           position: relative;
           z-index: 5;
           overflow: hidden;
-          background: #0a0f1a;
+          background: #0a0f1a !important;
+          background-color: #0a0f1a !important;
         }}
         #spline-canvas {{
           width: 100%;
           height: 100%;
           display: block;
+          background: #0a0f1a !important;
+          background-color: #0a0f1a !important;
         }}
 
         /* Loading overlay */
@@ -234,7 +237,7 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         <!-- Spline 3D canvas -->
         <div class="right-panel">
           <div id="loading"><div class="spinner"></div></div>
-          <canvas id="spline-canvas"></canvas>
+          <canvas id="spline-canvas" style="background:#0a0f1a;background-color:#0a0f1a;"></canvas>
         </div>
       </div>
 
@@ -242,9 +245,18 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         import {{ Application }} from 'https://unpkg.com/@splinetool/runtime@1.9.82/build/runtime.js';
         const canvas = document.getElementById('spline-canvas');
         const loading = document.getElementById('loading');
+        // Pre-set canvas background so WebGL never shows white
+        canvas.style.background = '#0a0f1a';
+        canvas.style.backgroundColor = '#0a0f1a';
+
         try {{
           const app = new Application(canvas);
           await app.load('{scene_url}');
+
+          // Force Spline scene background dark (fixes white bg on Streamlit Cloud)
+          try {{ app.setBackgroundColor({{ r: 10/255, g: 15/255, b: 26/255, a: 1 }}); }} catch(_) {{}}
+          try {{ if (app.scene) {{ app.scene.background = null; }} }} catch(_) {{}}
+
           // Get Started → navigate to career analysis
         var gsBtn = document.getElementById('getStartedBtn');
         if (gsBtn) {{
@@ -2212,7 +2224,6 @@ document.addEventListener('mousemove', function(e) {
 </script>
 </body>
 </html>""", height=310, scrolling=False)
-
 
 
 # ==================== TAB RENDER FUNCTIONS ====================

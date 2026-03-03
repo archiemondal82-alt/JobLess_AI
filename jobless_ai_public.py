@@ -4617,8 +4617,8 @@ def main():
     ui.apply_custom_css()
 
     # ── Query param routing (browser back/forward) ────────────────────────
-    qp = st.query_params.get("page", "home")
-    if qp != st.session_state.get('current_page', 'home'):
+    qp = st.query_params.get("page", "")
+    if qp and qp != st.session_state.get('current_page', 'home'):
         st.session_state['current_page'] = qp
 
     # Sidebar (returns settings needed by tabs)

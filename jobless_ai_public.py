@@ -57,6 +57,7 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
     <html>
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
       <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
       <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -106,6 +107,17 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           display: flex;
           flex-direction: column;
           justify-content: center;
+        }}
+
+        /* ── MOBILE: hide text panel, give robot 100% width ── */
+        @media (max-width: 600px) {{
+          .wrapper {{ flex-direction: column; height: auto !important; min-height: {height}px; }}
+          .left-panel {{ display: none; }}
+          .right-panel {{ flex: 1; min-height: {height}px; }}
+        }}
+        @media (min-width: 601px) and (max-width: 900px) {{
+          .left-panel {{ flex: 0 0 38%; padding: 16px 20px; }}
+          .left-panel h1 {{ font-size: 1.6rem; }}
         }}
         .label {{
           font-family: 'Inter', sans-serif;
@@ -1832,6 +1844,39 @@ class UIComponents:
             .resource-card .rc-name { font-family:'Space Grotesk',sans-serif; font-size:0.95rem; font-weight:600; color:#e2e8f0; margin-bottom:4px; }
             .resource-card .rc-desc { font-family:'Space Grotesk',sans-serif; font-size:0.78rem; color:#64748b; line-height:1.5; }
             .resource-card .rc-tag  { display:inline-block; margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:2px 8px; border-radius:4px; background:rgba(0,210,255,0.1); color:#38bdf8; border:1px solid rgba(0,210,255,0.2); }
+
+            /* ══════════════════════════════════════════
+               GLOBAL MOBILE RESPONSIVE FIXES
+               Screen 1: Home, Screen 2+: All tabs
+            ══════════════════════════════════════════ */
+            @media (max-width: 768px) {
+                /* Reduce main padding on mobile */
+                .main .block-container {
+                    padding-left: 0.75rem !important;
+                    padding-right: 0.75rem !important;
+                    margin-top: 0 !important;
+                }
+                /* Hide hamburger button on mobile (sidebar toggle) */
+                #jl-hamburger { display: flex !important; }
+                /* Stack Streamlit columns vertically */
+                [data-testid="stHorizontalBlock"] {
+                    flex-direction: column !important;
+                }
+                [data-testid="stHorizontalBlock"] > [data-testid="stVerticalBlock"] {
+                    width: 100% !important;
+                    min-width: 100% !important;
+                }
+                /* Tighten fonts for mobile */
+                h2 { font-size: 1.3rem !important; }
+                h3 { font-size: 1rem !important; }
+                /* Resource grid single column */
+                .resource-grid { grid-template-columns: 1fr !important; }
+            }
+            @media (max-width: 480px) {
+                h2 { font-size: 1.1rem !important; }
+                p, li { font-size: 0.88rem !important; }
+                .compare-header { font-size: 1.1rem !important; }
+            }
         </style>
         """
         st.markdown(css, unsafe_allow_html=True)
@@ -4322,11 +4367,12 @@ def _build_ai_pyq_pdf(company: str, role: str, sections: list) -> bytes:
 
 
 def main():
+    # Detect mobile via query param or default to collapsed sidebar on mobile
     st.set_page_config(
         page_title="JobLess AI",
         page_icon="🚀",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",   # ← MOBILE FIX: don't auto-open sidebar
     )
 
     init_session_state()
@@ -4395,6 +4441,7 @@ def main():
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -4406,6 +4453,18 @@ html, body { background: #060c18 !important; background-color: #060c18 !importan
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   padding: 4px 2px 10px 2px;
+}
+/* Mobile: 2 columns */
+@media (max-width: 520px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .card { padding: 12px 12px 10px 12px; }
+  .card-icon { font-size: 1.1rem; }
+  .card-title { font-size: 0.78rem; }
+  .card-desc { font-size: 0.67rem; }
+}
+/* Very small: 1 column */
+@media (max-width: 320px) {
+  .grid { grid-template-columns: 1fr; }
 }
 
 /* ── Spotlight card ── */
@@ -4635,7 +4694,8 @@ document.addEventListener('mousemove', function(e) {
 </script>
 </body>
 </html>"""
-        components.html(cards_html, height=300, scrolling=False)
+        # On mobile 2-col grid needs more height; use scrolling=True as safe fallback
+        components.html(cards_html, height=380, scrolling=False)
 
     # Section pages — render directly below the compact robot
     if page != 'home':

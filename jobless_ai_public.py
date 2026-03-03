@@ -4201,7 +4201,7 @@ def main():
         scene_url="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
         title="Interactive 3D",
         description="Meet your AI career assistant. Powered by cutting-edge AI models, JobLess AI helps you navigate your career journey with confidence.",
-        height=350 if page == 'home' else 220,
+        height=240 if page == 'home' else 200,
         show_get_started=(page == 'home')
     )
 
@@ -4214,7 +4214,7 @@ def main():
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background: transparent; overflow: hidden; }
+html, body { background: #060c18 !important; background-color: #060c18 !important; overflow: hidden; }
 
 /* ── Grid ── */
 .grid {
@@ -4248,7 +4248,7 @@ body { background: transparent; overflow: hidden; }
   background-position: 50% 50%;
   background-attachment: fixed;
   border: var(--border-size) solid rgba(255,255,255,0.07);
-  padding: 26px 22px 22px 22px;
+  padding: 14px 16px 12px 16px;
   cursor: pointer;
   transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
   user-select: none;
@@ -4300,33 +4300,33 @@ body { background: transparent; overflow: hidden; }
 }
 
 .card-icon {
-  font-size: 1.7rem;
-  margin-bottom: 14px;
+  font-size: 1.3rem;
+  margin-bottom: 6px;
   display: block;
   line-height: 1;
 }
 
 .card-title {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #e2e8f0;
-  margin-bottom: 7px;
+  margin-bottom: 4px;
   letter-spacing: 0.01em;
 }
 
 .card-desc {
   font-family: 'Inter', sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #4a5a72;
-  line-height: 1.55;
+  line-height: 1.4;
 }
 
 .card-arrow {
   position: absolute;
-  bottom: 18px;
-  right: 18px;
-  font-size: 0.75rem;
+  bottom: 10px;
+  right: 12px;
+  font-size: 0.7rem;
   color: rgba(0,210,255,0.3);
   font-family: 'JetBrains Mono', monospace;
   transition: color 0.2s ease, transform 0.2s ease;
@@ -4338,13 +4338,13 @@ body { background: transparent; overflow: hidden; }
 
 /* ── Get Started button ── */
 .gs-wrap {
-  padding: 4px 0 0 0;
+  padding: 2px 0 0 0;
 }
 .gs-btn {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 12px 30px;
+  gap: 7px;
+  padding: 9px 22px;
   background: linear-gradient(135deg, #00d2ff 0%, #0ea8d8 100%);
   color: #020b14;
   font-family: 'Space Grotesk', sans-serif;
@@ -4451,7 +4451,7 @@ document.addEventListener('mousemove', function(e) {
 </script>
 </body>
 </html>"""
-        components.html(cards_html, height=360, scrolling=False)
+        components.html(cards_html, height=300, scrolling=False)
 
     # Section pages — render directly below the compact robot
     if page != 'home':

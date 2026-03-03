@@ -68,14 +68,17 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           border-radius: 16px;
           display: flex;
           border: 1px solid rgba(0, 210, 255, 0.12);
-          box-s.wrapper {{
+          box-s..wrapper {{
           width: 100%;
           height: {height}px;
-          background: linear-gradient(135deg, #0a0f1a 0%, #0d1526 50%, #0a0f1a 100%);
+          background: #0a0f1a;
           position: relative;
-          overflow: hidden;hadow: 0 0 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+          overflow: hidden;
+          border-radius: 0;
+          display: flex;
+          border: none;
+          box-shadow: none;
         }}
-
         /* Ambient glow */
         .glow-left {{
           position: absolute;

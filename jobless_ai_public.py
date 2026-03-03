@@ -1663,6 +1663,131 @@ class UIComponents:
             .job-link-btn.remoteok:hover  { background:rgba(139,92,246,0.25);  box-shadow:0 6px 20px rgba(139,92,246,0.2); }
 
             /* ── SIDEBAR NAV BUTTONS ── */
+            #jl-hamburger {
+                position: fixed;
+                top: 16px;
+                right: 16px;
+                z-index: 99999;
+                width: 44px;
+                height: 44px;
+                background: rgba(6, 12, 24, 0.55);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(0, 210, 255, 0.2);
+                border-radius: 12px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 5px;
+                cursor: pointer !important;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            }
+            #jl-hamburger:hover {
+                background: rgba(0, 210, 255, 0.12);
+                border-color: rgba(0, 210, 255, 0.5);
+                box-shadow: 0 0 20px rgba(0,210,255,0.2);
+            }
+            #jl-hamburger span {
+                display: block;
+                width: 18px;
+                height: 1.5px;
+                background: #00d2ff;
+                border-radius: 2px;
+                transition: all 0.25s ease;
+            }
+            #jl-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+            #jl-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+            #jl-hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+            #jl-nav-panel {
+                position: fixed;
+                top: 0;
+                right: 0;
+                width: 260px;
+                height: 100vh;
+                background: rgba(6, 10, 20, 0.92);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-left: 1px solid rgba(0, 210, 255, 0.12);
+                z-index: 99998;
+                transform: translateX(100%);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                padding: 80px 20px 24px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+                overflow-y: auto;
+            }
+            #jl-nav-panel.open { transform: translateX(0); }
+
+            #jl-nav-panel .nav-label {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 0.58rem;
+                letter-spacing: 0.22em;
+                text-transform: uppercase;
+                color: rgba(0,210,255,0.35);
+                margin: 0 0 8px 4px;
+            }
+            #jl-nav-panel .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 14px;
+                border-radius: 10px;
+                border: 1px solid transparent;
+                cursor: pointer !important;
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 0.88rem;
+                font-weight: 500;
+                color: #64748b;
+                transition: all 0.18s ease;
+                text-decoration: none;
+            }
+            #jl-nav-panel .nav-item:hover {
+                background: rgba(0,210,255,0.07);
+                border-color: rgba(0,210,255,0.15);
+                color: #e2e8f0;
+            }
+            #jl-nav-panel .nav-item.active {
+                background: rgba(0,210,255,0.1);
+                border-color: rgba(0,210,255,0.25);
+                color: #00d2ff;
+            }
+            #jl-nav-panel .nav-divider {
+                height: 1px;
+                background: linear-gradient(90deg, transparent, rgba(0,210,255,0.15), transparent);
+                margin: 10px 0;
+            }
+            #jl-nav-panel .settings-btn {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 14px;
+                border-radius: 10px;
+                border: 1px solid rgba(0,210,255,0.2);
+                cursor: pointer !important;
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 0.88rem;
+                font-weight: 600;
+                color: #00d2ff;
+                background: rgba(0,210,255,0.06);
+                transition: all 0.18s ease;
+                margin-top: 4px;
+            }
+            #jl-nav-panel .settings-btn:hover {
+                background: rgba(0,210,255,0.14);
+                border-color: rgba(0,210,255,0.4);
+            }
+            #jl-nav-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 99997;
+                display: none;
+            }
+            #jl-nav-overlay.open { display: block; }
             [data-testid="stSidebar"] .stButton > button {
                 background: transparent !important;
                 border: 1px solid transparent !important;
@@ -2809,38 +2934,17 @@ def render_sidebar(config: Config) -> tuple[str, str, str, bool, bool]:
             return None
 
     with st.sidebar:
-        # ── Logo + Nav (only shown after API key is set) ──────────────────
+        # ── Logo ──────────────────────────────────────────────────────────
         if config.is_ready():
             st.markdown("""
         <div style="padding: 24px 16px 8px 16px;">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:28px;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
                 <div style="width:38px;height:38px;background:linear-gradient(135deg,#00d2ff,#3a7bd5);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 0 16px rgba(0,210,255,0.35);">⚡</div>
                 <span style="font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:700;color:#ffffff;letter-spacing:0.04em;">JOBLESS AI</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
-
-            page = st.session_state.get('current_page', 'home')
-            nav_items = [
-                ('home',          '🏠', 'Home'),
-                ('career',        '📊', 'Career Analysis'),
-                ('history',       '📜', 'History'),
-                ('compare',       '⚖️', 'Compare'),
-                ('resources',     '📚', 'Resources'),
-                ('resume',        '📝', 'Resume Builder'),
-                ('interview',     '🎤', 'Mock Interview'),
-                ('pyq',           '📂', 'PYQ Hub'),
-            ]
-            st.markdown('<div style="font-family:JetBrains Mono,monospace;font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,210,255,0.4);margin:0 0 6px 4px;">Navigation</div>', unsafe_allow_html=True)
-            for key, icon, label in nav_items:
-                is_active = page == key
-                bg = 'background:rgba(0,210,255,0.1);border:1px solid rgba(0,210,255,0.2);' if is_active else 'background:transparent;border:1px solid transparent;'
-                color = '#00d2ff' if is_active else '#64748b'
-                if st.button(f"{icon}  {label}", key=f"nav_{key}", use_container_width=True):
-                    st.session_state['current_page'] = key
-                    st.rerun()
-            st.markdown(
-                '<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,210,255,0.2),transparent);margin:16px 0;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,210,255,0.2),transparent);margin:0 0 16px 0;"></div>', unsafe_allow_html=True)
             st.markdown('<div style="font-family:JetBrains Mono,monospace;font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,210,255,0.4);margin-bottom:10px;">Settings</div>', unsafe_allow_html=True)
         else:
             lottie_brain = load_lottieurl(
@@ -4158,6 +4262,64 @@ def main():
     history_manager = HistoryManager()
 
     ui.apply_custom_css()
+
+    # ── Floating hamburger nav (right side) ───────────────────────────────
+    page_now = st.session_state.get('current_page', 'home')
+    nav_items_html = ""
+    nav_defs = [
+        ('home',      '🏠', 'Home'),
+        ('career',    '📊', 'Career Analysis'),
+        ('resume',    '📝', 'Resume Builder'),
+        ('interview', '🎤', 'Mock Interview'),
+        ('pyq',       '📂', 'PYQ Hub'),
+        ('resources', '📚', 'Resources'),
+        ('compare',   '⚖️',  'Compare'),
+        ('history',   '🕒', 'History'),
+    ]
+    for key, icon, label in nav_defs:
+        active_cls = ' active' if page_now == key else ''
+        nav_items_html += f'<div class="nav-item{active_cls}" data-page="{key}">{icon}&nbsp;&nbsp;{label}</div>\n'
+
+    hamburger_html = f"""
+    <div id="jl-nav-overlay"></div>
+    <div id="jl-nav-panel">
+        <div class="nav-label">Navigation</div>
+        {nav_items_html}
+    </div>
+    <div id="jl-hamburger" title="Menu">
+        <span></span><span></span><span></span>
+    </div>
+    <script>
+    (function() {{
+        var btn   = document.getElementById('jl-hamburger');
+        var panel = document.getElementById('jl-nav-panel');
+        var overlay = document.getElementById('jl-nav-overlay');
+        function close() {{
+            btn.classList.remove('open');
+            panel.classList.remove('open');
+            overlay.classList.remove('open');
+        }}
+        btn.addEventListener('click', function(e) {{
+            e.stopPropagation();
+            var isOpen = panel.classList.contains('open');
+            if (isOpen) {{ close(); }} else {{
+                btn.classList.add('open');
+                panel.classList.add('open');
+                overlay.classList.add('open');
+            }}
+        }});
+        overlay.addEventListener('click', close);
+        document.querySelectorAll('.nav-item').forEach(function(item) {{
+            item.addEventListener('click', function() {{
+                var page = item.getAttribute('data-page');
+                window.parent.postMessage({{ type: 'jl-nav', page: page }}, '*');
+                close();
+            }});
+        }});
+    }})();
+    </script>
+    """
+    st.markdown(hamburger_html, unsafe_allow_html=True)
 
     # Sidebar (returns settings needed by tabs)
     selected_provider, selected_model, analysis_depth, include_learning_path, include_interview_prep = \

@@ -64,16 +64,20 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         html, body {{ background: #0a0f1a !important; background-color: #0a0f1a !important; overflow: hidden; cursor: none !important; }}
         canvas {{ cursor: none !important; }}
 
-        .wrapper {{
-          width: 100%;
-          height: {height}px;
-          background: linear-gradient(135deg, #0a0f1a 0%, #0d1526 50%, #0a0f1a 100%);
-          position: relative;
-          overflow: hidden;
+        
           border-radius: 16px;
           display: flex;
           border: 1px solid rgba(0, 210, 255, 0.12);
-          box-shadow: 0 0 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+          box-s.wrapper {{
+          width: 100%;
+          height: {height}px;
+          background: #0a0f1a;
+          position: relative;
+          overflow: hidden;
+          border-radius: 0;
+          display: flex;
+          border: none;
+          box-shadow: none;
         }}
 
         /* Ambient glow */
@@ -178,15 +182,12 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           position: relative;
           z-index: 5;
           overflow: hidden;
-          background: #0a0f1a !important;
-          background-color: #0a0f1a !important;
+          background: #0a0f1a;
         }}
         #spline-canvas {{
           width: 100%;
           height: 100%;
           display: block;
-          background: #0a0f1a !important;
-          background-color: #0a0f1a !important;
         }}
 
         /* Loading overlay */
@@ -237,7 +238,7 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         <!-- Spline 3D canvas -->
         <div class="right-panel">
           <div id="loading"><div class="spinner"></div></div>
-          <canvas id="spline-canvas" style="background:#0a0f1a;background-color:#0a0f1a;"></canvas>
+          <canvas id="spline-canvas"></canvas>
         </div>
       </div>
 
@@ -245,18 +246,9 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         import {{ Application }} from 'https://unpkg.com/@splinetool/runtime@1.9.82/build/runtime.js';
         const canvas = document.getElementById('spline-canvas');
         const loading = document.getElementById('loading');
-        // Pre-set canvas background so WebGL never shows white
-        canvas.style.background = '#0a0f1a';
-        canvas.style.backgroundColor = '#0a0f1a';
-
         try {{
           const app = new Application(canvas);
           await app.load('{scene_url}');
-
-          // Force Spline scene background dark (fixes white bg on Streamlit Cloud)
-          try {{ app.setBackgroundColor({{ r: 10/255, g: 15/255, b: 26/255, a: 1 }}); }} catch(_) {{}}
-          try {{ if (app.scene) {{ app.scene.background = null; }} }} catch(_) {{}}
-
           // Get Started → navigate to career analysis
         var gsBtn = document.getElementById('getStartedBtn');
         if (gsBtn) {{

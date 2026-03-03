@@ -2811,9 +2811,896 @@ WORK EXPERIENCE
     )
 
 
+
+_VOICE_INTERVIEW_HTML = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#050a12;color:#e2e8f0;font-family:'DM Sans',sans-serif;overflow:hidden;height:100%}
+#app{display:flex;flex-direction:column;height:700px;background:#050a12}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(0,0,0,0.4);border-bottom:1px solid rgba(0,210,255,0.1);flex-shrink:0}
+.hdr-title{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:800;background:linear-gradient(90deg,#00d2ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr-role{font-family:'DM Mono',monospace;font-size:.62rem;color:rgba(0,210,255,.6);background:rgba(0,210,255,.08);border:1px solid rgba(0,210,255,.2);border-radius:20px;padding:2px 10px}
+.hdr-level{font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.35);background:rgba(255,255,255,.05);border-radius:20px;padding:2px 8px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.q-counter{font-family:'DM Mono',monospace;font-size:.7rem;color:#00d2ff;font-weight:500}
+.q-dots{display:flex;gap:4px}
+.q-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);transition:all .3s ease}
+.q-dot.done{background:#00d2ff;box-shadow:0 0 8px rgba(0,210,255,.6)}
+.q-dot.current{background:#a855f7;box-shadow:0 0 8px rgba(168,85,247,.6);animation:qdot 1s ease-in-out infinite}
+@keyframes qdot{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+
+/* MAIN */
+.main{display:flex;flex:1;gap:0;overflow:hidden}
+
+/* WEBCAM PANEL */
+.cam-panel{flex:0 0 220px;display:flex;flex-direction:column;padding:12px;gap:8px;background:rgba(0,0,0,.2);border-right:1px solid rgba(255,255,255,.05)}
+.cam-wrap{position:relative;border-radius:12px;overflow:hidden;background:#0a0f1a;aspect-ratio:1;border:2px solid rgba(0,210,255,.15)}
+.cam-wrap video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.cam-wrap .no-cam{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:rgba(255,255,255,.2);font-size:.65rem;font-family:'DM Mono',monospace}
+.cam-wrap .no-cam .icon{font-size:1.8rem;opacity:.3}
+.rec-badge{position:absolute;top:7px;left:7px;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.7);border-radius:20px;padding:2px 8px;backdrop-filter:blur(8px)}
+.rec-dot{width:5px;height:5px;border-radius:50%;background:#ef4444;animation:recdot 1.2s ease-in-out infinite}
+@keyframes recdot{0%,100%{opacity:1}50%{opacity:.3}}
+.rec-txt{font-family:'DM Mono',monospace;font-size:.48rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.1em}
+.score-history{display:flex;flex-direction:column;gap:5px;flex:1;overflow-y:auto}
+.score-history::-webkit-scrollbar{width:2px}
+.score-history::-webkit-scrollbar-thumb{background:rgba(0,210,255,.2);border-radius:2px}
+.score-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:6px 8px;display:flex;align-items:center;justify-content:space-between;opacity:0;transform:translateY(6px);transition:all .3s ease}
+.score-item.show{opacity:1;transform:translateY(0)}
+.score-item-q{font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.4)}
+.score-item-val{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700}
+
+/* AI PANEL */
+.ai-panel{flex:1;display:flex;flex-direction:column;padding:14px;gap:10px;overflow:hidden}
+
+/* AI AVATAR + QUESTION */
+.ai-box{background:rgba(168,85,247,.05);border:1px solid rgba(168,85,247,.15);border-radius:14px;padding:14px;display:flex;gap:14px;align-items:flex-start;flex-shrink:0}
+.ai-avatar{flex-shrink:0;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,rgba(168,85,247,.3),rgba(0,210,255,.2));border:2px solid rgba(168,85,247,.4);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.ai-avatar .icon{font-size:1.2rem}
+.ai-avatar.speaking{animation:avatarglow 1s ease-in-out infinite}
+@keyframes avatarglow{0%,100%{box-shadow:0 0 0 0 rgba(168,85,247,.4)}50%{box-shadow:0 0 0 8px rgba(168,85,247,.0)}}
+.ai-content{flex:1}
+.ai-label{font-family:'DM Mono',monospace;font-size:.5rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(168,85,247,.6);margin-bottom:6px}
+.ai-question-txt{font-size:.88rem;color:#e2e8f0;line-height:1.6;font-weight:400}
+.waveform{display:flex;align-items:center;gap:2px;height:18px;margin-top:6px}
+.wv-bar{width:3px;border-radius:2px;background:#a855f7;opacity:.4}
+.wv-bar.active{animation:wvbar .6s ease-in-out infinite}
+.wv-bar:nth-child(1){animation-delay:.0s;height:4px}
+.wv-bar:nth-child(2){animation-delay:.1s;height:8px}
+.wv-bar:nth-child(3){animation-delay:.15s;height:14px}
+.wv-bar:nth-child(4){animation-delay:.2s;height:18px}
+.wv-bar:nth-child(5){animation-delay:.25s;height:12px}
+.wv-bar:nth-child(6){animation-delay:.3s;height:16px}
+.wv-bar:nth-child(7){animation-delay:.2s;height:8px}
+.wv-bar:nth-child(8){animation-delay:.1s;height:5px}
+@keyframes wvbar{0%,100%{opacity:.4;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.5)}}
+
+/* TRANSCRIPT BOX */
+.transcript-box{flex:1;background:rgba(0,210,255,.04);border:1px solid rgba(0,210,255,.12);border-radius:14px;padding:14px;display:flex;flex-direction:column;overflow:hidden}
+.transcript-label{font-family:'DM Mono',monospace;font-size:.5rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(0,210,255,.5);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.mic-pulse{width:5px;height:5px;border-radius:50%;background:#00d2ff;opacity:0;animation:micpulse 1s ease-in-out infinite}
+.mic-pulse.active{opacity:1}
+@keyframes micpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
+.transcript-text{flex:1;font-size:.85rem;color:#94a3b8;line-height:1.7;overflow-y:auto;font-style:italic}
+.transcript-text.has-text{color:#e2e8f0;font-style:normal}
+.transcript-text::-webkit-scrollbar{width:2px}
+.transcript-text::-webkit-scrollbar-thumb{background:rgba(0,210,255,.2);border-radius:2px}
+.cursor-blink{display:inline-block;width:2px;height:14px;background:#00d2ff;vertical-align:middle;margin-left:2px;animation:cblink .9s step-end infinite}
+@keyframes cblink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* CONTROLS */
+.controls{display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.status-txt{font-family:'DM Mono',monospace;font-size:.6rem;color:rgba(255,255,255,.3);letter-spacing:.06em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mic-btn{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#00d2ff,#0ea8d8);border:none;cursor:pointer;font-size:1.3rem;display:flex;align-items:center;justify-content:center;transition:all .2s ease;box-shadow:0 0 20px rgba(0,210,255,.3);flex-shrink:0;position:relative}
+.mic-btn:hover{transform:scale(1.08);box-shadow:0 0 30px rgba(0,210,255,.5)}
+.mic-btn.listening{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 0 20px rgba(239,68,68,.4);animation:miclistening 1s ease-in-out infinite}
+@keyframes miclistening{0%,100%{box-shadow:0 0 20px rgba(239,68,68,.4)}50%{box-shadow:0 0 40px rgba(239,68,68,.7)}}
+.mic-btn.disabled{background:rgba(255,255,255,.08);box-shadow:none;cursor:not-allowed;opacity:.5}
+.submit-btn{padding:10px 20px;background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,210,255,.15));border:1px solid rgba(168,85,247,.4);border-radius:25px;color:#e2e8f0;font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;cursor:pointer;transition:all .2s ease;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.submit-btn:hover:not(:disabled){background:linear-gradient(135deg,rgba(168,85,247,.35),rgba(0,210,255,.25));transform:translateY(-1px)}
+.submit-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* FEEDBACK TOAST */
+.feedback-toast{position:absolute;bottom:80px;right:16px;background:rgba(10,15,26,.95);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;max-width:280px;transform:translateY(20px);opacity:0;transition:all .4s ease;z-index:100;pointer-events:none;backdrop-filter:blur(12px)}
+.feedback-toast.show{transform:translateY(0);opacity:1}
+.ft-score{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;line-height:1}
+.ft-label{font-family:'DM Mono',monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.1em;opacity:.5;margin-bottom:4px}
+.ft-text{font-size:.75rem;color:#94a3b8;line-height:1.5;margin-top:6px}
+
+/* FINAL REPORT OVERLAY */
+.report-overlay{position:absolute;inset:0;background:rgba(5,10,18,.97);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;overflow-y:auto;z-index:200;backdrop-filter:blur(12px)}
+.report-overlay::-webkit-scrollbar{width:4px}
+.report-overlay::-webkit-scrollbar-thumb{background:rgba(0,210,255,.2);border-radius:2px}
+.report-header{text-align:center;margin-bottom:20px;width:100%}
+.report-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;background:linear-gradient(90deg,#00d2ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.report-sub{font-size:.75rem;color:rgba(255,255,255,.35);font-family:'DM Mono',monospace}
+.report-scores{display:flex;gap:12px;justify-content:center;margin-bottom:20px;flex-wrap:wrap;width:100%}
+.rscore-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 18px;text-align:center;min-width:90px}
+.rscore-val{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;line-height:1}
+.rscore-lbl{font-family:'DM Mono',monospace;font-size:.52rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px}
+.report-section{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px}
+.rs-title{font-family:'DM Mono',monospace;font-size:.55rem;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.rs-item{font-size:.75rem;color:#94a3b8;line-height:1.5;padding:5px 8px;border-radius:6px;margin-bottom:4px}
+.report-btns{display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.rpdf-btn{padding:11px 24px;background:linear-gradient(135deg,#00d2ff,#0ea8d8);color:#020b14;font-family:'DM Mono',monospace;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:25px;cursor:pointer;transition:all .2s ease}
+.rpdf-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,210,255,.4)}
+.ragain-btn{padding:11px 24px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:25px;cursor:pointer;transition:all .2s ease}
+.ragain-btn:hover{background:rgba(255,255,255,.1)}
+.q-breakdown{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px;margin-bottom:16px}
+.qb-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.qb-num{font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.4);min-width:24px}
+.qb-bar-wrap{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.qb-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,#00d2ff,#a855f7);transition:width 1s ease}
+.qb-score{font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;min-width:36px;text-align:right}
+
+/* no speech support warning */
+.no-speech{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 16px;font-size:.8rem;color:#fbbf24;text-align:center;margin:8px 16px}
+</style>
+</head>
+<body>
+<div id="app" style="position:relative">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-title">🎙️ AI Voice Interview</div>
+  <div class="hdr-role" id="hdrRole">__ROLE__</div>
+  <div class="hdr-level" id="hdrLevel">__LEVEL__</div>
+  <div class="hdr-right">
+    <div class="q-counter" id="qCounter">Q 0 / 6</div>
+    <div class="q-dots" id="qDots">
+      <div class="q-dot" id="qdot0"></div>
+      <div class="q-dot" id="qdot1"></div>
+      <div class="q-dot" id="qdot2"></div>
+      <div class="q-dot" id="qdot3"></div>
+      <div class="q-dot" id="qdot4"></div>
+      <div class="q-dot" id="qdot5"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN AREA -->
+<div class="main">
+
+  <!-- WEBCAM PANEL -->
+  <div class="cam-panel">
+    <div class="cam-wrap" id="camWrap">
+      <video id="webcamVideo" autoplay muted playsinline></video>
+      <div class="no-cam" id="noCam">
+        <div class="icon">📷</div>
+        <span>Camera off</span>
+      </div>
+      <div class="rec-badge" id="recBadge" style="display:none">
+        <div class="rec-dot"></div>
+        <span class="rec-txt">LIVE</span>
+      </div>
+    </div>
+    <div class="score-history" id="scoreHistory"></div>
+  </div>
+
+  <!-- AI + TRANSCRIPT PANEL -->
+  <div class="ai-panel">
+    <div class="ai-box">
+      <div class="ai-avatar" id="aiAvatar">
+        <span class="icon">🤖</span>
+      </div>
+      <div class="ai-content">
+        <div class="ai-label">AI Interviewer</div>
+        <div class="ai-question-txt" id="aiQuestionTxt">Connecting to AI interviewer, please wait...</div>
+        <div class="waveform" id="waveform">
+          <div class="wv-bar"></div>
+          <div class="wv-bar"></div>
+          <div class="wv-bar"></div>
+          <div class="wv-bar"></div>
+          <div class="wv-bar"></div>
+          <div class="wv-bar"></div>
+          <div class="wv-bar"></div>
+          <div class="wv-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="transcript-box">
+      <div class="transcript-label">
+        <div class="mic-pulse" id="micPulse"></div>
+        YOUR ANSWER
+      </div>
+      <div class="transcript-text" id="transcriptText">
+        Press the microphone button below and speak your answer...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="status-txt" id="statusTxt">Initializing...</div>
+  <button class="mic-btn disabled" id="micBtn" onclick="toggleMic()">🎤</button>
+  <button class="submit-btn" id="submitBtn" disabled onclick="submitAnswer()">Submit Answer →</button>
+</div>
+
+<!-- FEEDBACK TOAST -->
+<div class="feedback-toast" id="feedbackToast">
+  <div class="ft-label">Score</div>
+  <div class="ft-score" id="ftScore">--</div>
+  <div class="ft-text" id="ftText"></div>
+</div>
+
+<!-- FINAL REPORT OVERLAY (hidden initially) -->
+<div class="report-overlay" id="reportOverlay" style="display:none">
+  <div class="report-header">
+    <div class="report-title">🎉 Interview Complete!</div>
+    <div class="report-sub" id="reportSub">__ROLE__ · __LEVEL__</div>
+  </div>
+  <div class="report-scores" id="reportScores"></div>
+  <div class="q-breakdown" id="qBreakdown">
+    <div style="font-family:'DM Mono',monospace;font-size:.55rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(0,210,255,.5);margin-bottom:10px;">Question Scores</div>
+    <div id="qBreakdownRows"></div>
+  </div>
+  <div class="report-grid" id="reportGrid"></div>
+  <div class="report-btns">
+    <button class="rpdf-btn" onclick="downloadPDF()">📄 Download PDF Report</button>
+    <button class="ragain-btn" onclick="restartInterview()">🔄 Interview Again</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURATION (injected by Python) ───────────────────────────
+var API_KEY = "__APIKEY__";
+var PROVIDER = "__PROVIDER__";
+var MODEL = "__MODEL__";
+var ROLE = "__ROLE__";
+var LEVEL = "__LEVEL__";
+var TOTAL_QUESTIONS = 6;
+
+// ── STATE ────────────────────────────────────────────────────────
+var state = "INIT"; // INIT, AI_SPEAKING, USER_TURN, PROCESSING, COMPLETE
+var questionIndex = 0;
+var currentQuestion = "";
+var currentTranscript = "";
+var finalTranscript = "";
+var recognition = null;
+var synth = window.speechSynthesis;
+var isListening = false;
+var interviewData = {
+  role: ROLE, level: LEVEL,
+  questions: [], answers: [], scores: [], feedbacks: [],
+  overallScore: 0, grade: "", verdict: "", strengths: [], weaknesses: []
+};
+
+// ── INIT ─────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  initWebcam();
+  initSpeech();
+  startInterview();
+});
+
+function initWebcam() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('noCam').style.display = 'flex';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+    .then(function(stream) {
+      var vid = document.getElementById('webcamVideo');
+      vid.srcObject = stream;
+      vid.style.display = 'block';
+      document.getElementById('noCam').style.display = 'none';
+      document.getElementById('recBadge').style.display = 'flex';
+    })
+    .catch(function() {
+      document.getElementById('noCam').style.display = 'flex';
+    });
+}
+
+function initSpeech() {
+  var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    setStatus("⚠️ Voice not supported in this browser. Use Chrome or Edge.");
+    return;
+  }
+  recognition = new SpeechRec();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = function(e) {
+    var interim = '', final = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (final) finalTranscript += final + ' ';
+    currentTranscript = finalTranscript + interim;
+    showTranscript(currentTranscript, true);
+  };
+
+  recognition.onerror = function(e) {
+    if (e.error !== 'no-speech') setStatus('Mic error: ' + e.error);
+  };
+  recognition.onend = function() {
+    if (isListening) {
+      try { recognition.start(); } catch(e) {}
+    }
+  };
+}
+
+// ── API CALL ─────────────────────────────────────────────────────
+async function callAI(messages) {
+  try {
+    if (PROVIDER === 'groq') {
+      var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
+        body: JSON.stringify({ model: MODEL, messages: messages, temperature: 0.7, max_tokens: 800 })
+      });
+      var data = await resp.json();
+      return data.choices[0].message.content;
+
+    } else if (PROVIDER === 'gemini') {
+      var gemMsgs = messages.filter(function(m) { return m.role !== 'system'; }).map(function(m) {
+        return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] };
+      });
+      var sysMsg = messages.find(function(m) { return m.role === 'system'; });
+      var body = {
+        contents: gemMsgs,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+      };
+      if (sysMsg) body.systemInstruction = { parts: [{ text: sysMsg.content }] };
+      var resp = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent?key=' + API_KEY,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
+      var data = await resp.json();
+      return data.candidates[0].content.parts[0].text;
+
+    } else if (PROVIDER === 'cohere') {
+      var history = [];
+      for (var i = 1; i < messages.length - 1; i++) {
+        history.push({ role: messages[i].role === 'user' ? 'USER' : 'CHATBOT', message: messages[i].content });
+      }
+      var resp = await fetch('https://api.cohere.ai/v1/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
+        body: JSON.stringify({
+          model: MODEL,
+          message: messages[messages.length - 1].content,
+          chat_history: history,
+          preamble: messages[0].content,
+          temperature: 0.7,
+          max_tokens: 800
+        })
+      });
+      var data = await resp.json();
+      return data.text;
+    }
+  } catch(e) {
+    return null;
+  }
+}
+
+// ── SYSTEM PROMPT ─────────────────────────────────────────────────
+var conversationHistory = [];
+
+function buildSystemPrompt() {
+  return 'You are a sharp, professional AI interviewer conducting a voice interview for the role of ' + ROLE + ' (' + LEVEL + ' level).\n\n' +
+    'RULES:\n' +
+    '- Ask exactly ' + TOTAL_QUESTIONS + ' interview questions total (behavioral + technical mix).\n' +
+    '- After each answer, evaluate it briefly and ask the next question.\n' +
+    '- Keep your spoken responses SHORT (2-3 sentences max) — this is voice.\n' +
+    '- On the final answer, wrap up with a complete evaluation.\n\n' +
+    'ALWAYS respond with valid JSON only, no markdown, in this exact format:\n' +
+    '{"speech":"what you say aloud","question":"the question you are asking (empty string if done)","score":75,"feedback":"1 sentence evaluation of their answer (null for first turn)","question_num":1,"is_complete":false}\n\n' +
+    'For the final response (after answer ' + TOTAL_QUESTIONS + ') use:\n' +
+    '{"speech":"closing remarks","question":"","score":80,"feedback":"final feedback","question_num":' + TOTAL_QUESTIONS + ',"is_complete":true,"overall_score":78,"grade":"B+","verdict":"Almost Ready","strengths":["...","..."],"weaknesses":["...","..."]}';
+}
+
+// ── INTERVIEW FLOW ────────────────────────────────────────────────
+async function startInterview() {
+  setStatus('Connecting to AI Interviewer...');
+  conversationHistory = [
+    { role: 'system', content: buildSystemPrompt() },
+    { role: 'user', content: 'BEGIN_INTERVIEW. Greet me briefly and ask question 1 of ' + TOTAL_QUESTIONS + '.' }
+  ];
+
+  setState('PROCESSING');
+  var raw = await callAI(conversationHistory);
+  if (!raw) { setStatus('❌ Failed to connect. Check your API key.'); return; }
+
+  var parsed = parseJSON(raw);
+  if (!parsed) { setStatus('❌ AI response error. Try again.'); return; }
+
+  conversationHistory.push({ role: 'assistant', content: raw });
+  currentQuestion = parsed.question || '';
+  interviewData.questions.push(currentQuestion);
+  updateQCounter(1);
+
+  setAIText(parsed.speech);
+  await speakText(parsed.speech, true);
+  setState('USER_TURN');
+  setStatus('🎤 Your turn — press the mic to speak');
+}
+
+async function submitAnswer() {
+  if (!finalTranscript.trim() && !currentTranscript.trim()) {
+    setStatus('⚠️ No answer detected. Please speak first.');
+    return;
+  }
+
+  var answer = (finalTranscript || currentTranscript).trim();
+  stopListening();
+  interviewData.answers.push(answer);
+
+  setState('PROCESSING');
+  setStatus('🧠 AI is evaluating...');
+  showTranscript(answer, false);
+
+  var userMsg = 'My answer to Q' + questionIndex + ': "' + answer + '".\nNow evaluate my answer and ';
+  if (questionIndex < TOTAL_QUESTIONS) {
+    userMsg += 'ask question ' + (questionIndex + 1) + ' of ' + TOTAL_QUESTIONS + '.';
+  } else {
+    userMsg += 'wrap up the interview with final evaluation.';
+  }
+
+  conversationHistory.push({ role: 'user', content: userMsg });
+  var raw = await callAI(conversationHistory);
+
+  if (!raw) { setStatus('❌ API error. Try again.'); setState('USER_TURN'); return; }
+
+  var parsed = parseJSON(raw);
+  if (!parsed) { setStatus('❌ Parse error.'); setState('USER_TURN'); return; }
+
+  conversationHistory.push({ role: 'assistant', content: raw });
+
+  // Record score
+  var score = parsed.score || 0;
+  interviewData.scores.push(score);
+  interviewData.feedbacks.push(parsed.feedback || '');
+  addScoreToHistory(questionIndex, score);
+  showFeedbackToast(score, parsed.feedback || '');
+
+  if (parsed.is_complete) {
+    // Final
+    interviewData.overallScore = parsed.overall_score || Math.round(interviewData.scores.reduce(function(a,b){return a+b;},0)/interviewData.scores.length);
+    interviewData.grade = parsed.grade || gradeFromScore(interviewData.overallScore);
+    interviewData.verdict = parsed.verdict || '';
+    interviewData.strengths = parsed.strengths || [];
+    interviewData.weaknesses = parsed.weaknesses || [];
+
+    setAIText(parsed.speech);
+    await speakText(parsed.speech, true);
+    setState('COMPLETE');
+    setTimeout(showFinalReport, 1800);
+  } else {
+    // Next question
+    questionIndex++;
+    currentQuestion = parsed.question || '';
+    interviewData.questions.push(currentQuestion);
+    updateQCounter(questionIndex + 1);
+    finalTranscript = '';
+    currentTranscript = '';
+    showTranscript('', false);
+
+    setAIText(parsed.speech);
+    await speakText(parsed.speech, true);
+    setState('USER_TURN');
+    setStatus('🎤 Your turn — press the mic to speak');
+  }
+}
+
+// ── MIC ───────────────────────────────────────────────────────────
+function toggleMic() {
+  if (state !== 'USER_TURN') return;
+  if (isListening) stopListening();
+  else startListening();
+}
+
+function startListening() {
+  if (!recognition) return;
+  finalTranscript = '';
+  currentTranscript = '';
+  isListening = true;
+  try { recognition.start(); } catch(e) {}
+  document.getElementById('micBtn').classList.add('listening');
+  document.getElementById('micBtn').innerHTML = '⏹';
+  document.getElementById('micPulse').classList.add('active');
+  document.getElementById('submitBtn').disabled = false;
+  setStatus('🔴 Listening... press stop when done');
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) try { recognition.stop(); } catch(e) {}
+  document.getElementById('micBtn').classList.remove('listening');
+  document.getElementById('micBtn').innerHTML = '🎤';
+  document.getElementById('micPulse').classList.remove('active');
+  setStatus('✅ Answer captured — press Submit when ready');
+}
+
+// ── TTS ───────────────────────────────────────────────────────────
+function speakText(text, wait) {
+  return new Promise(function(resolve) {
+    if (!synth) { resolve(); return; }
+    synth.cancel();
+    var bars = document.querySelectorAll('.wv-bar');
+    bars.forEach(function(b) { b.classList.add('active'); });
+    document.getElementById('aiAvatar').classList.add('speaking');
+
+    var utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.95;
+    utter.pitch = 1.0;
+    utter.volume = 1.0;
+
+    // Try to find a good English voice
+    var voices = synth.getVoices();
+    var pref = voices.find(function(v) { return v.name.includes('Google') && v.lang.startsWith('en'); })
+            || voices.find(function(v) { return v.lang.startsWith('en') && !v.localService; })
+            || voices.find(function(v) { return v.lang.startsWith('en'); });
+    if (pref) utter.voice = pref;
+
+    utter.onend = function() {
+      bars.forEach(function(b) { b.classList.remove('active'); });
+      document.getElementById('aiAvatar').classList.remove('speaking');
+      resolve();
+    };
+    utter.onerror = function() {
+      bars.forEach(function(b) { b.classList.remove('active'); });
+      document.getElementById('aiAvatar').classList.remove('speaking');
+      resolve();
+    };
+    synth.speak(utter);
+    if (!wait) resolve();
+  });
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────
+function setState(s) {
+  state = s;
+  var micBtn = document.getElementById('micBtn');
+  var submitBtn = document.getElementById('submitBtn');
+  if (s === 'USER_TURN') {
+    micBtn.classList.remove('disabled');
+    micBtn.disabled = false;
+  } else {
+    micBtn.classList.add('disabled');
+    micBtn.disabled = true;
+    submitBtn.disabled = true;
+    stopListening();
+  }
+}
+
+function setStatus(txt) {
+  document.getElementById('statusTxt').textContent = txt;
+}
+
+function setAIText(txt) {
+  document.getElementById('aiQuestionTxt').textContent = txt;
+}
+
+function showTranscript(txt, live) {
+  var el = document.getElementById('transcriptText');
+  if (!txt) {
+    el.innerHTML = 'Press the microphone button below and speak your answer...';
+    el.classList.remove('has-text');
+  } else {
+    el.innerHTML = txt + (live ? '<span class="cursor-blink"></span>' : '');
+    el.classList.add('has-text');
+  }
+}
+
+function updateQCounter(n) {
+  questionIndex = n - 1;
+  document.getElementById('qCounter').textContent = 'Q ' + n + ' / ' + TOTAL_QUESTIONS;
+  for (var i = 0; i < TOTAL_QUESTIONS; i++) {
+    var dot = document.getElementById('qdot' + i);
+    if (!dot) continue;
+    dot.className = 'q-dot';
+    if (i < n - 1) dot.classList.add('done');
+    else if (i === n - 1) dot.classList.add('current');
+  }
+}
+
+function addScoreToHistory(qIdx, score) {
+  var color = score >= 85 ? '#22c55e' : score >= 70 ? '#00d2ff' : score >= 55 ? '#f59e0b' : '#ef4444';
+  var el = document.createElement('div');
+  el.className = 'score-item';
+  el.innerHTML = '<span class="score-item-q">Q' + (qIdx) + '</span><span class="score-item-val" style="color:' + color + '">' + score + '</span>';
+  document.getElementById('scoreHistory').appendChild(el);
+  setTimeout(function() { el.classList.add('show'); }, 50);
+}
+
+function showFeedbackToast(score, text) {
+  var color = score >= 85 ? '#22c55e' : score >= 70 ? '#00d2ff' : score >= 55 ? '#f59e0b' : '#ef4444';
+  document.getElementById('ftScore').textContent = score;
+  document.getElementById('ftScore').style.color = color;
+  document.getElementById('ftText').textContent = text;
+  var toast = document.getElementById('feedbackToast');
+  toast.classList.add('show');
+  setTimeout(function() { toast.classList.remove('show'); }, 3500);
+}
+
+function showFinalReport() {
+  var avg = interviewData.overallScore;
+  var grade = interviewData.grade;
+  var gradeColor = grade.startsWith('A') ? '#22c55e' : grade.startsWith('B') ? '#00d2ff' : grade.startsWith('C') ? '#f59e0b' : '#ef4444';
+
+  // Score cards
+  var scoresHtml = [
+    '<div class="rscore-card"><div class="rscore-val" style="color:' + gradeColor + '">' + avg + '</div><div class="rscore-lbl">Overall</div></div>',
+    '<div class="rscore-card"><div class="rscore-val" style="color:' + gradeColor + '">' + grade + '</div><div class="rscore-lbl">Grade</div></div>',
+    '<div class="rscore-card"><div class="rscore-val" style="color:#a855f7">' + interviewData.questions.length + '</div><div class="rscore-lbl">Questions</div></div>',
+    '<div class="rscore-card"><div class="rscore-val" style="color:#f59e0b">' + (interviewData.verdict || 'See report') + '</div><div class="rscore-lbl" style="white-space:nowrap">Verdict</div></div>'
+  ].join('');
+  document.getElementById('reportScores').innerHTML = scoresHtml;
+
+  // Q breakdown
+  var rows = '';
+  interviewData.scores.forEach(function(s, i) {
+    var c = s >= 85 ? '#22c55e' : s >= 70 ? '#00d2ff' : s >= 55 ? '#f59e0b' : '#ef4444';
+    rows += '<div class="qb-row"><span class="qb-num">Q'+(i+1)+'</span><div class="qb-bar-wrap"><div class="qb-bar" style="width:'+s+'%;background:'+c+'"></div></div><span class="qb-score" style="color:'+c+'">'+s+'</span></div>';
+  });
+  document.getElementById('qBreakdownRows').innerHTML = rows;
+
+  // Strengths / weaknesses grid
+  var strengthsHtml = '<div class="report-section"><div class="rs-title" style="color:#22c55e">🌟 Strengths</div>' +
+    interviewData.strengths.map(function(s) { return '<div class="rs-item" style="background:rgba(34,197,94,.06);border-left:2px solid #22c55e">'+s+'</div>'; }).join('') + '</div>';
+  var weakHtml = '<div class="report-section"><div class="rs-title" style="color:#ef4444">⚠️ To Improve</div>' +
+    interviewData.weaknesses.map(function(s) { return '<div class="rs-item" style="background:rgba(239,68,68,.06);border-left:2px solid #ef4444">'+s+'</div>'; }).join('') + '</div>';
+  document.getElementById('reportGrid').innerHTML = strengthsHtml + weakHtml;
+
+  document.getElementById('reportOverlay').style.display = 'flex';
+}
+
+// ── PDF DOWNLOAD ──────────────────────────────────────────────────
+function downloadPDF() {
+  var jspdf = window.jspdf;
+  if (!jspdf) { alert('PDF library not loaded. Please try again.'); return; }
+  var doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+  var W = 210, margin = 18, y = 20;
+
+  // Header
+  doc.setFillColor(5, 10, 18);
+  doc.rect(0, 0, W, 40, 'F');
+  doc.setTextColor(0, 210, 255);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('JobLess AI — Interview Report', margin, 18);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(148, 163, 184);
+  doc.text('Role: ' + ROLE + '  |  Level: ' + LEVEL + '  |  Date: ' + new Date().toLocaleDateString(), margin, 28);
+  doc.text('Powered by JobLess AI · joblessai.streamlit.app', margin, 35);
+  y = 50;
+
+  // Overall scores
+  doc.setFillColor(15, 23, 42);
+  doc.roundedRect(margin, y, W - 2*margin, 24, 3, 3, 'F');
+  doc.setTextColor(0, 210, 255);
+  doc.setFontSize(28);
+  doc.setFont('helvetica', 'bold');
+  doc.text(String(interviewData.overallScore), margin + 10, y + 17);
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Overall Score', margin + 10, y + 22);
+  doc.setFontSize(28);
+  doc.setTextColor(168, 85, 247);
+  doc.text(interviewData.grade, margin + 40, y + 17);
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Grade', margin + 40, y + 22);
+  if (interviewData.verdict) {
+    doc.setFontSize(10);
+    doc.setTextColor(226, 232, 240);
+    doc.text('Verdict: ' + interviewData.verdict, margin + 70, y + 14);
+  }
+  y += 32;
+
+  // Q breakdown
+  doc.setTextColor(0, 210, 255);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Question-by-Question Breakdown', margin, y);
+  y += 7;
+  interviewData.questions.forEach(function(q, i) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    var s = interviewData.scores[i] || 0;
+    var fb = interviewData.feedbacks[i] || '';
+    doc.setFillColor(20, 28, 42);
+    doc.roundedRect(margin, y, W - 2*margin, 18 + (fb ? 6 : 0), 2, 2, 'F');
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Q' + (i+1) + ': ' + (q.length > 80 ? q.substring(0,80)+'...' : q), margin + 3, y + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Score: ' + s + '/100', W - margin - 25, y + 6);
+    if (fb) {
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(7);
+      doc.text(fb.length > 100 ? fb.substring(0,100)+'...' : fb, margin + 3, y + 13);
+    }
+    var a = interviewData.answers[i] || '';
+    if (a) {
+      doc.setTextColor(71, 85, 105);
+      doc.setFontSize(6.5);
+      doc.text('Answer: ' + (a.length > 120 ? a.substring(0,120)+'...' : a), margin + 3, y + (fb ? 20 : 14));
+    }
+    y += 24 + (fb ? 4 : 0);
+  });
+
+  // Strengths & weaknesses
+  if (y > 240) { doc.addPage(); y = 20; }
+  y += 4;
+  if (interviewData.strengths.length) {
+    doc.setTextColor(34, 197, 94);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Top Strengths', margin, y);
+    y += 6;
+    interviewData.strengths.forEach(function(s) {
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('• ' + s, margin + 3, y);
+      y += 6;
+    });
+  }
+  y += 4;
+  if (interviewData.weaknesses.length) {
+    doc.setTextColor(239, 68, 68);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Areas to Improve', margin, y);
+    y += 6;
+    interviewData.weaknesses.forEach(function(w) {
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('• ' + w, margin + 3, y);
+      y += 6;
+    });
+  }
+
+  // Footer
+  doc.setFillColor(5, 10, 18);
+  doc.rect(0, 282, W, 15, 'F');
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Generated by JobLess AI · ' + new Date().toLocaleString(), margin, 290);
+
+  doc.save('JoblessAI_Interview_' + ROLE.replace(/[\s]+/g,'_') + '_' + new Date().toISOString().split('T')[0] + '.pdf');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function parseJSON(raw) {
+  try {
+    var clean = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    return JSON.parse(clean);
+  } catch(e) {
+    var m = raw.match(/\{[\s\S]*\}/);
+    if (m) try { return JSON.parse(m[0]); } catch(e2) {}
+    return null;
+  }
+}
+
+function gradeFromScore(s) {
+  if (s >= 90) return 'A+';
+  if (s >= 80) return 'A';
+  if (s >= 75) return 'B+';
+  if (s >= 65) return 'B';
+  if (s >= 55) return 'C+';
+  if (s >= 45) return 'C';
+  return 'D';
+}
+
+function restartInterview() {
+  document.getElementById('reportOverlay').style.display = 'none';
+  interviewData = { role: ROLE, level: LEVEL, questions: [], answers: [], scores: [], feedbacks: [], overallScore: 0, grade: '', verdict: '', strengths: [], weaknesses: [] };
+  questionIndex = 0;
+  document.getElementById('scoreHistory').innerHTML = '';
+  for (var i = 0; i < TOTAL_QUESTIONS; i++) {
+    var d = document.getElementById('qdot'+i);
+    if (d) d.className = 'q-dot';
+  }
+  showTranscript('', false);
+  startInterview();
+}
+
+// Relay mouse to parent
+document.addEventListener('mousemove', function(e) {
+  var rect = window.frameElement ? window.frameElement.getBoundingClientRect() : {left:0,top:0};
+  window.parent.postMessage({type:'ns-move', x: e.clientX+rect.left, y: e.clientY+rect.top}, '*');
+}, {passive:true});
+</script>
+</body>
+</html>"""
+
+def _render_voice_interview_agent(ai_handler, selected_model):
+    import streamlit.components.v1 as _cmp
+    api_key = ai_handler.config.get_api_key()
+    provider_display = ai_handler.config.get_provider()
+    provider = PROVIDER_INTERNAL.get(provider_display, "gemini")
+    role = st.session_state.get("voice_mi_role", "Software Engineer")
+    level = st.session_state.get("voice_mi_level", "Fresher")
+    html = _VOICE_INTERVIEW_HTML.replace("__APIKEY__", api_key).replace("__PROVIDER__", provider).replace("__MODEL__", selected_model or "").replace("__ROLE__", role).replace("__LEVEL__", level)
+    _cmp.html(html, height=720, scrolling=False)
+
 def render_tab_mock_interview(ai_handler: AIHandler, selected_model: str):
-    """Tab 6 — Mock Interview Simulator."""
-    st.markdown("### 🎤 Mock Interview Simulator")
+    """Tab 6 — Mock Interview Simulator (Text + Voice modes)."""
+    # ── Mode toggle ───────────────────────────────────────────────
+    mode_col1, mode_col2 = st.columns(2)
+    voice_mode = st.session_state.get("interview_mode", "text") == "voice"
+    with mode_col1:
+        if st.button("📝 Text Interview", use_container_width=True,
+                     type="primary" if not voice_mode else "secondary", key="mode_text"):
+            st.session_state.interview_mode = "text"
+            st.rerun()
+    with mode_col2:
+        if st.button("🎙️ Voice Interview  ✨ New", use_container_width=True,
+                     type="primary" if voice_mode else "secondary", key="mode_voice"):
+            st.session_state.interview_mode = "voice"
+            st.rerun()
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+    # ── VOICE MODE ────────────────────────────────────────────────
+    if voice_mode:
+        if st.session_state.get("voice_interview_active", False):
+            _render_voice_interview_agent(ai_handler, selected_model)
+        else:
+            # Quick setup for voice mode
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(0,210,255,0.06));border:1px solid rgba(168,85,247,0.25);border-radius:16px;padding:18px 22px;margin-bottom:20px;">
+              <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:6px;">🎙️ AI Voice Interview Agent</div>
+              <div style="color:#64748b;font-size:0.88rem;line-height:1.7;">
+                A real-time voice-to-voice interview with an AI agent.<br>
+                🎤 <b style="color:#94a3b8;">Speak</b> your answers &nbsp;·&nbsp; 🔊 <b style="color:#94a3b8;">AI speaks</b> questions back &nbsp;·&nbsp; 📷 <b style="color:#94a3b8;">Webcam preview</b> &nbsp;·&nbsp; 📄 <b style="color:#94a3b8;">Download PDF report</b><br>
+                <span style="color:#f59e0b;font-size:0.78rem;">⚠️ Requires Chrome or Edge browser for voice features.</span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            ALL_ROLES_VOICE = [
+                "Software Engineer", "Backend Engineer", "Frontend Engineer",
+                "Full Stack Developer", "Data Scientist", "ML Engineer",
+                "Data Analyst", "Data Engineer", "Product Manager",
+                "DevOps Engineer", "Cloud Engineer", "Cybersecurity Analyst",
+                "AI Researcher", "NLP Engineer", "Business Analyst",
+                "UX Designer", "Mobile Developer", "QA Engineer",
+                "Financial Analyst", "Marketing Manager", "Others",
+            ]
+            vc1, vc2 = st.columns([3, 2])
+            with vc1:
+                st.markdown('<div style="color:rgba(0,210,255,0.75);font-family:JetBrains Mono,monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;">🎯 Job Role</div>', unsafe_allow_html=True)
+                vr = st.selectbox("Voice Role", ALL_ROLES_VOICE, key="voice_mi_role_sel", label_visibility="collapsed")
+                if vr == "Others":
+                    vr = st.text_input("Custom role", placeholder="e.g. Prompt Engineer", key="voice_mi_role_custom")
+                st.session_state.voice_mi_role = vr
+            with vc2:
+                st.markdown('<div style="color:rgba(0,210,255,0.75);font-family:JetBrains Mono,monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;">🪜 Level</div>', unsafe_allow_html=True)
+                vl = st.selectbox("Level", ["Fresher", "Junior (1-3 yrs)", "Mid-level (3-6 yrs)", "Senior (6+ yrs)"],
+                                  key="voice_mi_level_sel", label_visibility="collapsed")
+                st.session_state.voice_mi_level = vl
+
+            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+            if st.button("🚀 Launch Voice Interview", use_container_width=True, type="primary", key="launch_voice"):
+                if not selected_model:
+                    st.error("⚠️ Configure your API key in the sidebar first!")
+                elif not st.session_state.get("voice_mi_role", ""):
+                    st.error("⚠️ Please select a role.")
+                else:
+                    st.session_state.voice_interview_active = True
+                    st.rerun()
+        return
+
+    # ── TEXT MODE (original) ──────────────────────────────────────
     st.markdown("""
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;">
       <div style="flex:1;min-width:160px;background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:12px 16px;text-align:center;"><div style="font-size:1.4rem;">🎯</div><div style="color:#a855f7;font-weight:600;font-size:0.85rem;margin-top:4px;">Pick Role + Level</div></div>

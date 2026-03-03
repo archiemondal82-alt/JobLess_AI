@@ -1435,7 +1435,7 @@ class UIComponents:
 
             /* ── APP BACKGROUND ── */
             .stApp { background: #060c18 !important; color: white !important; font-family: 'Space Grotesk', sans-serif !important; cursor: none !important; }
-            .main .block-container { padding-top: 0 !important; padding-left: 2rem !important; padding-right: 2rem !important; max-width: 100% !important; margin-top: -80px !important; }
+            .main .block-container { padding-top: 0 !important; padding-left: 2rem !important; padding-right: 2rem !important; max-width: 100% !important; margin-top: -30px !important; }
             /* Kill Streamlit's default top header gap */
             [data-testid="stAppViewContainer"] > section > div:first-child { padding-top: 0 !important; }
             header[data-testid="stHeader"] { height: 0 !important; min-height: 0 !important; visibility: hidden !important; }

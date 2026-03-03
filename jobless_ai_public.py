@@ -67,13 +67,13 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         .wrapper {{
           width: 100%;
           height: {height}px;
-          background: linear-gradient(135deg, #0a0f1a 0%, #0d1526 50%, #0a0f1a 100%);
+          background: #0a0f1a;
           position: relative;
           overflow: hidden;
-          border-radius: 16px;
+          border-radius: 0;
           display: flex;
-          border: 1px solid rgba(0, 210, 255, 0.12);
-          box-shadow: 0 0 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+          border: none;
+          box-shadow: none;
         }}
 
         /* Ambient glow */
@@ -2032,186 +2032,257 @@ class UIComponents:
 
     @staticmethod
     @staticmethod
+    @staticmethod
     def show_api_setup_banner():
         import streamlit.components.v1 as _cmp
         _cmp.html("""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{background:#060c18!important;background-color:#060c18!important;font-family:'Space Grotesk',sans-serif}
-.banner{display:flex;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.09);box-shadow:0 8px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.07);background:#060c18!important;height:300px}
-.L{flex:0 0 47%;padding:20px 20px 16px 20px;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid rgba(255,255,255,0.07);overflow:hidden;background:linear-gradient(135deg,rgba(255,255,255,0.06) 0%,rgba(0,210,255,0.04) 60%,rgba(168,85,247,0.05) 100%)!important;}
-.title{font-size:.9rem;font-weight:800;background:linear-gradient(135deg,#fff 0%,#a8f0ff 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:2px}
-.sub{color:rgba(255,255,255,.3);font-size:.62rem;letter-spacing:.05em;margin-bottom:9px;font-family:'Inter',sans-serif}
-.div{height:1px;margin-bottom:9px;background:linear-gradient(90deg,transparent,rgba(0,210,255,.35),rgba(168,85,247,.25),transparent)}
-.pr{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.pb{border-radius:20px;padding:3px 9px;font-size:.67rem;font-weight:700;white-space:nowrap;flex-shrink:0}
-.pd{color:rgba(255,255,255,.3);font-size:.62rem;font-family:'Inter',sans-serif;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pl{font-size:.62rem;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;opacity:.75}
-.pl:hover{opacity:1}
-.pill{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:30px;padding:5px 13px;font-size:.67rem;color:rgba(255,255,255,.75);font-weight:600;white-space:nowrap}
-.R{flex:1;position:relative;background:#060c18;overflow:hidden}
-.R::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);pointer-events:none;z-index:20}
-.badge{position:absolute;top:9px;right:11px;font-family:'JetBrains Mono',monospace;font-size:.49rem;letter-spacing:.15em;color:rgba(0,210,255,.45);text-transform:uppercase;z-index:30}
-.sw{position:absolute;inset:0}
-.sc{position:absolute;inset:0;padding:14px 16px 28px 16px;display:flex;flex-direction:column;opacity:0;transform:translateX(22px);transition:opacity .55s ease,transform .55s ease;pointer-events:none}
-.sc.active{opacity:1;transform:translateX(0)}
-.sc.exit{opacity:0;transform:translateX(-22px)}
-.sl{font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,210,255,.55);margin-bottom:5px;display:flex;align-items:center;gap:4px}
-.sd{width:5px;height:5px;border-radius:50%;background:#00d2ff;box-shadow:0 0 6px #00d2ff;flex-shrink:0;animation:p 1.5s ease-in-out infinite}
-@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
-.st{font-size:.84rem;font-weight:700;color:#e2e8f0;margin-bottom:8px}
-.fi{background:rgba(255,255,255,.05);border:1px solid rgba(0,210,255,.22);border-radius:7px;padding:5px 9px;font-size:.64rem;color:#94a3b8;font-family:'Inter',sans-serif;margin-bottom:7px}
-.cur{display:inline-block;width:1.5px;height:9px;background:#00d2ff;margin-left:1px;vertical-align:middle;animation:bl .9s step-end infinite}
-@keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
-.rc{background:rgba(0,210,255,.05);border:1px solid rgba(0,210,255,.15);border-radius:8px;padding:6px 9px;margin-bottom:5px;opacity:0;transform:translateY(7px)}
-.rc.show{animation:ci .35s ease forwards}
-@keyframes ci{to{opacity:1;transform:translateY(0)}}
-.rt{font-size:.62rem;font-weight:700;color:#00d2ff;margin-bottom:3px}
-.bb{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
-.bf{height:100%;border-radius:2px;background:linear-gradient(90deg,#00d2ff,#a855f7);width:0%;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
-.rl{height:5px;border-radius:3px;background:rgba(255,255,255,.1);margin-bottom:5px;transform:scaleX(0);transform-origin:left}
-.rl.acc{background:rgba(0,210,255,.3);height:7px;margin-bottom:7px}
-.rl.go{animation:dl .4s ease forwards}
-@keyframes dl{to{transform:scaleX(1)}}
-.ab2{display:inline-flex;align-items:center;gap:4px;background:rgba(0,210,255,.1);border:1px solid rgba(0,210,255,.3);border-radius:6px;padding:3px 9px;font-size:.6rem;font-weight:700;color:#00d2ff;margin-top:6px;opacity:0;transition:opacity .5s ease}
-.qb{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.3);border-radius:9px 9px 9px 3px;padding:7px 9px;font-size:.62rem;color:#c4b5fd;font-family:'Inter',sans-serif;line-height:1.5;margin-bottom:6px;opacity:0;transform:translateY(6px)}
-.qb.show{animation:fu .45s ease forwards}
-.ab3{background:rgba(0,210,255,.07);border:1px solid rgba(0,210,255,.2);border-radius:9px 9px 3px 9px;padding:7px 9px;font-size:.6rem;color:#7dd3fc;font-family:'Inter',sans-serif;line-height:1.5;margin-left:12px;opacity:0;transform:translateY(6px)}
-.ab3.show{animation:fu .45s ease .7s forwards}
-@keyframes fu{to{opacity:1;transform:translateY(0)}}
-.dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:25}
-.dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .3s ease}
-.dot.active{width:15px;border-radius:3px;background:#00d2ff;box-shadow:0 0 8px rgba(0,210,255,.7)}
-@media(max-width:600px){.banner{flex-direction:column;height:auto}.L{flex:none;border-right:none;border-bottom:1px solid rgba(255,255,255,.07)}.R{min-height:250px}}
+html,body{background:#050a12!important;overflow:hidden;font-family:'DM Sans',sans-serif}
+.wrap{display:flex;height:340px;gap:0;position:relative}
+.L{flex:0 0 44%;padding:22px 24px 18px 24px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;border-right:1px solid rgba(255,255,255,0.06)}
+.L::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(0,210,255,0.07) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 90% 100%,rgba(168,85,247,0.06) 0%,transparent 60%),linear-gradient(160deg,#070d1a 0%,#060b16 100%);z-index:0}
+.L::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,210,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,210,255,0.025) 1px,transparent 1px);background-size:28px 28px;z-index:0;mask-image:radial-gradient(ellipse 100% 100% at 50% 50%,black 40%,transparent 100%)}
+.L>*{position:relative;z-index:2}
+.ltag{display:inline-flex;align-items:center;gap:6px;background:rgba(0,210,255,0.08);border:1px solid rgba(0,210,255,0.2);border-radius:20px;padding:3px 10px;margin-bottom:12px}
+.ltag-dot{width:5px;height:5px;border-radius:50%;background:#00d2ff;box-shadow:0 0 8px #00d2ff;animation:glow 2s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:1;box-shadow:0 0 8px #00d2ff}50%{opacity:.5;box-shadow:0 0 4px #00d2ff}}
+.ltag-txt{font-family:'DM Mono',monospace;font-size:.52rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(0,210,255,0.7)}
+.ltitle{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;background:linear-gradient(125deg,#ffffff 0%,#a8f0ff 45%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.25;margin-bottom:4px}
+.lsub{font-size:.62rem;color:rgba(255,255,255,0.28);letter-spacing:.04em;font-weight:300;margin-bottom:14px}
+.ldiv{height:1px;margin-bottom:14px;background:linear-gradient(90deg,transparent,rgba(0,210,255,.3),rgba(168,85,247,.2),transparent);position:relative}
+.ldiv::after{content:'';position:absolute;top:-1px;left:30%;width:20px;height:3px;background:#00d2ff;border-radius:2px;filter:blur(3px);animation:divslide 3s ease-in-out infinite}
+@keyframes divslide{0%,100%{left:10%;opacity:.8}50%{left:70%;opacity:1}}
+.prow{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:7px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.03);transition:all .25s ease;cursor:default;animation:prowIn .5s ease both}
+.prow:nth-child(1){animation-delay:.1s}
+.prow:nth-child(2){animation-delay:.2s}
+.prow:nth-child(3){animation-delay:.3s}
+@keyframes prowIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.prow:hover{border-color:rgba(0,210,255,0.2);background:rgba(0,210,255,0.05);transform:translateX(3px)}
+.pbadge{border-radius:6px;padding:2px 8px;font-size:.6rem;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif}
+.pmeta{flex:1;overflow:hidden}
+.pname{font-size:.68rem;font-weight:600;color:rgba(255,255,255,.8);line-height:1;margin-bottom:1px}
+.pdesc{font-size:.57rem;color:rgba(255,255,255,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plink{font-size:.58rem;font-weight:600;text-decoration:none;flex-shrink:0;opacity:.65;font-family:'DM Mono',monospace;transition:opacity .2s}
+.plink:hover{opacity:1}
+.lpill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:30px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);animation:pillIn .6s ease .5s both}
+@keyframes pillIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lpill-txt{font-size:.65rem;color:rgba(255,255,255,.6);font-weight:500;letter-spacing:.03em}
+.lpill-accent{color:#00d2ff;font-weight:700}
+.R{flex:1;position:relative;overflow:hidden;background:linear-gradient(155deg,#060c1a 0%,#050911 100%)}
+.R::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:40;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px)}
+.blob{position:absolute;border-radius:50%;pointer-events:none;filter:blur(40px);opacity:.3}
+.blob1{width:180px;height:180px;background:radial-gradient(#00d2ff,transparent);top:-40px;right:-20px;animation:b1 8s ease-in-out infinite}
+.blob2{width:140px;height:140px;background:radial-gradient(#a855f7,transparent);bottom:-30px;left:10px;animation:b2 10s ease-in-out infinite}
+@keyframes b1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,15px) scale(1.1)}}
+@keyframes b2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(15px,-20px) scale(.9)}}
+.livebadge{position:absolute;top:12px;right:14px;z-index:50;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.5);border:1px solid rgba(0,210,255,0.25);border-radius:20px;padding:3px 10px;backdrop-filter:blur(8px)}
+.livebadge-dot{width:5px;height:5px;border-radius:50%;background:#00d2ff;box-shadow:0 0 8px #00d2ff;animation:lp 1.4s ease-in-out infinite}
+@keyframes lp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.6}}
+.livebadge-txt{font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.18em;color:rgba(0,210,255,.75);text-transform:uppercase}
+.tabs{position:absolute;bottom:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 10px;background:linear-gradient(0deg,rgba(5,10,18,.95) 0%,transparent 100%)}
+.tab{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);font-size:.56rem;font-weight:600;color:rgba(255,255,255,.35);cursor:pointer;transition:all .25s ease;font-family:'DM Mono',monospace;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.tab.active{background:rgba(0,210,255,.12);border-color:rgba(0,210,255,.35);color:#00d2ff;box-shadow:0 0 14px rgba(0,210,255,.15)}
+.tab-icon{font-size:.65rem}
+.slides{position:absolute;inset:0;bottom:38px}
+.slide{position:absolute;inset:0;padding:18px 18px 10px 18px;display:flex;flex-direction:column;opacity:0;transform:translateY(14px) scale(.98);transition:opacity .5s cubic-bezier(.4,0,.2,1),transform .5s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.slide.active{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.slide.exit{opacity:0;transform:translateY(-10px) scale(.98)}
+.slabel{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.slabel-dot{width:4px;height:4px;border-radius:50%;background:#00d2ff;box-shadow:0 0 6px #00d2ff;animation:glow 1.5s ease-in-out infinite}
+.slabel-txt{font-family:'DM Mono',monospace;font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,210,255,.55)}
+.stitle{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;color:#f1f5f9;margin-bottom:10px;line-height:1.2}
+.stitle span{background:linear-gradient(90deg,#00d2ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.input-field{background:rgba(255,255,255,.04);border:1px solid rgba(0,210,255,.2);border-radius:8px;padding:7px 11px;font-size:.67rem;color:#94a3b8;font-family:'DM Mono',monospace;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.input-field::before{content:'>';color:rgba(0,210,255,.4);font-size:.55rem}
+.cursor{display:inline-block;width:1.5px;height:10px;background:#00d2ff;margin-left:2px;vertical-align:middle;animation:blink .9s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.career-cards{display:flex;flex-direction:column;gap:6px}
+.ccard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:10px;opacity:0;transform:translateX(-10px)}
+.ccard.show{animation:cardIn .4s ease forwards}
+@keyframes cardIn{to{opacity:1;transform:translateX(0)}}
+.ccard-role{flex:1}
+.ccard-name{font-size:.7rem;font-weight:600;color:#e2e8f0;font-family:'Syne',sans-serif;margin-bottom:3px}
+.ccard-sal{font-size:.58rem;color:rgba(255,255,255,.35);font-family:'DM Mono',monospace}
+.ccard-score{text-align:right;flex-shrink:0}
+.ccard-pct{font-family:'DM Mono',monospace;font-size:.75rem;font-weight:500}
+.ccard-bar{width:60px;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:3px}
+.ccard-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#00d2ff,#a855f7);width:0%;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.resume-mock{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+.rm-head{height:8px;width:55%;border-radius:4px;background:rgba(0,210,255,.35);transform:scaleX(0);transform-origin:left;margin-bottom:3px}
+.rm-line{height:4px;border-radius:2px;background:rgba(255,255,255,.1);transform:scaleX(0);transform-origin:left}
+.rm-line.go{animation:lineIn .4s ease forwards}
+.rm-head.go{animation:lineIn .4s ease forwards}
+@keyframes lineIn{to{transform:scaleX(1)}}
+.ats-badge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:linear-gradient(135deg,rgba(0,210,255,.12),rgba(0,210,255,.06));border:1px solid rgba(0,210,255,.3);border-radius:8px;padding:5px 12px;opacity:0;transition:opacity .5s ease;align-self:flex-start}
+.ats-badge.show{opacity:1}
+.ats-check{color:#00d2ff;font-size:.8rem}
+.ats-label{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:500;color:#00d2ff}
+.ats-score{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:#00d2ff;line-height:1}
+.ats-max{font-size:.55rem;color:rgba(0,210,255,.5);font-family:'DM Mono',monospace}
+.chat{display:flex;flex-direction:column;gap:8px;flex:1}
+.bubble{max-width:90%;border-radius:12px;padding:8px 11px;font-size:.63rem;line-height:1.55;font-family:'DM Sans',sans-serif;opacity:0;transform:translateY(8px)}
+.bubble.show{animation:bubbleIn .4s ease forwards}
+@keyframes bubbleIn{to{opacity:1;transform:translateY(0)}}
+.bubble.ai{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);border-radius:12px 12px 12px 3px;color:#d8b4fe;align-self:flex-start}
+.bubble.user{background:rgba(0,210,255,.08);border:1px solid rgba(0,210,255,.2);border-radius:12px 12px 3px 12px;color:#7dd3fc;align-self:flex-end;margin-left:10%}
+.typing{display:flex;align-items:center;gap:3px;padding:8px 12px;background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.15);border-radius:12px 12px 12px 3px;width:fit-content;opacity:0}
+.typing.show{animation:bubbleIn .3s ease forwards}
+.tdot{width:4px;height:4px;border-radius:50%;background:#a855f7;animation:td 1.2s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.2s}
+.tdot:nth-child(3){animation-delay:.4s}
+@keyframes td{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.score-row{display:flex;align-items:center;gap:8px;margin-top:4px;opacity:0}
+.score-row.show{animation:bubbleIn .4s ease .2s forwards}
+.score-chip{display:flex;align-items:center;gap:4px;background:rgba(0,210,255,.08);border:1px solid rgba(0,210,255,.2);border-radius:6px;padding:3px 8px;font-family:'DM Mono',monospace;font-size:.58rem;color:#00d2ff;font-weight:500}
+.score-val{font-size:.8rem;font-weight:700;font-family:'Syne',sans-serif;color:#00d2ff}
+.pyq-grid{display:flex;flex-direction:column;gap:6px;flex:1}
+.pyq-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:8px 11px;display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(8px)}
+.pyq-card.show{animation:cardIn .4s ease forwards}
+.pyq-co{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;font-family:'Syne',sans-serif;font-weight:700}
+.pyq-info{flex:1}
+.pyq-name{font-size:.7rem;font-weight:600;color:#e2e8f0;font-family:'Syne',sans-serif;margin-bottom:2px}
+.pyq-meta{font-size:.57rem;color:rgba(255,255,255,.3);font-family:'DM Mono',monospace}
+.pyq-count{background:rgba(0,210,255,.1);border:1px solid rgba(0,210,255,.2);border-radius:6px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:.58rem;color:#00d2ff;flex-shrink:0}
 </style>
 </head>
 <body>
-<div class="banner">
+<div class="wrap">
 <div class="L">
-  <div>
-    <div class="title">&#10022; Setup Required &mdash; Choose Your Free AI Provider</div>
-    <div class="sub">100% free &middot; no credit card &middot; no billing &middot; ever</div>
-    <div class="div"></div>
-    <div class="pr">
-      <span class="pb" style="background:rgba(66,133,244,.18);border:1px solid rgba(66,133,244,.45);color:#93c5fd">&#128309; Google Gemini</span>
-      <span class="pd">15 req/min &middot; 1500/day</span>
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="pl" style="color:#7dd3fc">aistudio.google.com &rarr;</a>
+  <div class="lhead">
+    <div class="ltag"><div class="ltag-dot"></div><span class="ltag-txt">Quick Setup</span></div>
+    <div class="ltitle">Choose Your Free<br>AI Provider</div>
+    <div class="lsub">100% free &middot; no credit card &middot; no billing &middot; ever</div>
+    <div class="ldiv"></div>
+    <div class="prow">
+      <span class="pbadge" style="background:rgba(66,133,244,.15);border:1px solid rgba(66,133,244,.4);color:#93c5fd">&#x25CF; Gemini</span>
+      <div class="pmeta"><div class="pname">Google Gemini</div><div class="pdesc">15 req/min &middot; 1500/day free</div></div>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="plink" style="color:#7dd3fc">Get key &rarr;</a>
     </div>
-    <div class="pr">
-      <span class="pb" style="background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.45);color:#fdba74">&#9889; Groq</span>
-      <span class="pd">Llama 3.3-70B &middot; ultra-fast</span>
-      <a href="https://console.groq.com/keys" target="_blank" class="pl" style="color:#fdba74">console.groq.com &rarr;</a>
+    <div class="prow">
+      <span class="pbadge" style="background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.4);color:#fdba74">&#x26A1; Groq</span>
+      <div class="pmeta"><div class="pname">Groq &mdash; Llama 3.3</div><div class="pdesc">Ultra-fast &middot; unlimited free</div></div>
+      <a href="https://console.groq.com/keys" target="_blank" class="plink" style="color:#fdba74">Get key &rarr;</a>
     </div>
-    <div class="pr" style="margin-bottom:9px">
-      <span class="pb" style="background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.45);color:#5eead4">&#127754; Cohere</span>
-      <span class="pd">Command-R+ &middot; free trial</span>
-      <a href="https://dashboard.cohere.com/api-keys" target="_blank" class="pl" style="color:#5eead4">dashboard.cohere.com &rarr;</a>
+    <div class="prow">
+      <span class="pbadge" style="background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.4);color:#5eead4">&#x25C6; Cohere</span>
+      <div class="pmeta"><div class="pname">Cohere Command-R+</div><div class="pdesc">Free trial &middot; no card needed</div></div>
+      <a href="https://dashboard.cohere.com/api-keys" target="_blank" class="plink" style="color:#5eead4">Get key &rarr;</a>
     </div>
-    <div class="div"></div>
   </div>
-  <div class="pill">&#128072; Sidebar &rarr; pick provider &rarr; paste key &rarr; 30 sec</div>
+  <div class="lpill">
+    <span style="font-size:.75rem">&#128072;</span>
+    <span class="lpill-txt">Sidebar &rarr; pick provider &rarr; paste key &rarr; <span class="lpill-accent">30 sec</span></span>
+  </div>
 </div>
 <div class="R">
-  <div class="badge">LIVE DEMO</div>
-  <div class="sw">
-    <div class="sc active" id="s0">
-      <div class="sl"><div class="sd"></div>Career Analysis</div>
-      <div class="st">Analyze Your Career Path</div>
-      <div class="fi">Python &middot; ML &middot; 2yrs @ TCS<span class="cur"></span></div>
-      <div class="rc" id="c0a"><div class="rt">Data Scientist</div><div class="bb"><div class="bf" id="b0a"></div></div></div>
-      <div class="rc" id="c0b"><div class="rt">ML Engineer</div><div class="bb"><div class="bf" id="b0b"></div></div></div>
-      <div class="rc" id="c0c"><div class="rt">AI Researcher</div><div class="bb"><div class="bf" id="b0c"></div></div></div>
+  <div class="blob blob1"></div>
+  <div class="blob blob2"></div>
+  <div class="livebadge"><div class="livebadge-dot"></div><span class="livebadge-txt">Live Preview</span></div>
+  <div class="slides">
+    <div class="slide active" id="sl0">
+      <div class="slabel"><div class="slabel-dot"></div><span class="slabel-txt">Career Analysis</span></div>
+      <div class="stitle">Your <span>AI Career</span> Roadmap</div>
+      <div class="input-field">Python &middot; ML &middot; 2 yrs @ TCS<span class="cursor"></span></div>
+      <div class="career-cards">
+        <div class="ccard" id="cc0"><div class="ccard-role"><div class="ccard-name">Data Scientist</div><div class="ccard-sal">&#8377;18L &ndash; &#8377;32L / yr</div></div><div class="ccard-score"><div class="ccard-pct" style="color:#00d2ff" id="pct0">0%</div><div class="ccard-bar"><div class="ccard-fill" id="bf0"></div></div></div></div>
+        <div class="ccard" id="cc1"><div class="ccard-role"><div class="ccard-name">ML Engineer</div><div class="ccard-sal">&#8377;22L &ndash; &#8377;40L / yr</div></div><div class="ccard-score"><div class="ccard-pct" style="color:#a855f7" id="pct1">0%</div><div class="ccard-bar"><div class="ccard-fill" id="bf1" style="background:linear-gradient(90deg,#a855f7,#ec4899)"></div></div></div></div>
+        <div class="ccard" id="cc2"><div class="ccard-role"><div class="ccard-name">AI Researcher</div><div class="ccard-sal">&#8377;28L &ndash; &#8377;55L / yr</div></div><div class="ccard-score"><div class="ccard-pct" style="color:#34d399" id="pct2">0%</div><div class="ccard-bar"><div class="ccard-fill" id="bf2" style="background:linear-gradient(90deg,#34d399,#06b6d4)"></div></div></div></div>
+      </div>
     </div>
-    <div class="sc" id="s1">
-      <div class="sl"><div class="sd"></div>Resume Builder</div>
-      <div class="st">ATS-Optimized Resume</div>
-      <div class="rl acc" id="rh"></div>
-      <div class="rl" id="r0" style="width:100%"></div>
-      <div class="rl" id="r1" style="width:78%"></div>
-      <div class="rl" id="r2" style="width:60%"></div>
-      <div class="rl" id="r3" style="width:92%"></div>
-      <div class="rl" id="r4" style="width:70%"></div>
-      <div class="rl" id="r5" style="width:85%"></div>
-      <div class="ab2" id="ats">&#10003; ATS Score: 94%</div>
+    <div class="slide" id="sl1">
+      <div class="slabel"><div class="slabel-dot"></div><span class="slabel-txt">Resume Builder</span></div>
+      <div class="stitle"><span>ATS-Optimized</span> Resume</div>
+      <div class="resume-mock">
+        <div class="rm-head" id="rmh"></div>
+        <div class="rm-line" id="rl0" style="width:100%"></div>
+        <div class="rm-line" id="rl1" style="width:72%"></div>
+        <div class="rm-line" id="rl2" style="width:88%"></div>
+        <div class="rm-line" id="rl3" style="width:55%"></div>
+        <div class="rm-line" id="rl4" style="width:91%"></div>
+        <div class="rm-line" id="rl5" style="width:66%"></div>
+        <div class="rm-line" id="rl6" style="width:80%"></div>
+        <div class="ats-badge" id="atsbadge"><span class="ats-check">&#10003;</span><div><div style="display:flex;align-items:baseline;gap:3px"><span class="ats-score" id="atsscore">0</span><span class="ats-max">/100</span></div><div class="ats-label">ATS Score</div></div></div>
+      </div>
     </div>
-    <div class="sc" id="s2">
-      <div class="sl"><div class="sd"></div>Mock Interview</div>
-      <div class="st">Practice with AI</div>
-      <div class="qb" id="qb">"Tell me about solving a complex ML problem under tight deadline pressure."</div>
-      <div class="ab3" id="ab">&#10022; Strong STAR method detected &mdash; quantified impact, clear outcome. Score: 8.5/10</div>
+    <div class="slide" id="sl2">
+      <div class="slabel"><div class="slabel-dot"></div><span class="slabel-txt">Mock Interview</span></div>
+      <div class="stitle">Practice with <span>AI Coach</span></div>
+      <div class="chat">
+        <div class="typing" id="typ0"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>
+        <div class="bubble ai" id="bub0">&#8220;Walk me through solving a complex ML problem under a tight deadline.&#8221;</div>
+        <div class="bubble user" id="bub1">Used STAR method: led churn-prediction model in 3 days, reduced churn 18%.</div>
+        <div class="typing" id="typ1"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>
+        <div class="bubble ai" id="bub2">Strong STAR structure. Quantified impact. Clear ownership. Excellent.</div>
+        <div class="score-row" id="scorerow"><div class="score-chip"><span class="score-val">8.5</span>&nbsp;/ 10</div><div class="score-chip" style="border-color:rgba(52,211,153,.3);color:#34d399;background:rgba(52,211,153,.07)">&#10022; Excellent</div></div>
+      </div>
     </div>
-    <div class="sc" id="s3">
-      <div class="sl"><div class="sd"></div>PYQ Hub</div>
-      <div class="st">Previous Year Questions</div>
-      <div class="rc" id="c3a"><div class="rt">Google SWE &middot; 2024</div><div class="bb"><div class="bf" id="b3a"></div></div></div>
-      <div class="rc" id="c3b"><div class="rt">Microsoft DS &middot; 2024</div><div class="bb"><div class="bf" id="b3b"></div></div></div>
-      <div class="rc" id="c3c"><div class="rt">Amazon ML &middot; 2023</div><div class="bb"><div class="bf" id="b3c"></div></div></div>
+    <div class="slide" id="sl3">
+      <div class="slabel"><div class="slabel-dot"></div><span class="slabel-txt">PYQ Hub</span></div>
+      <div class="stitle"><span>Past Questions</span> by Company</div>
+      <div class="pyq-grid">
+        <div class="pyq-card" id="pq0"><div class="pyq-co" style="background:rgba(66,133,244,.15);border:1px solid rgba(66,133,244,.3);color:#93c5fd">G</div><div class="pyq-info"><div class="pyq-name">Google &mdash; SWE L4</div><div class="pyq-meta">2024 &middot; System Design + DSA</div></div><div class="pyq-count">48 Qs</div></div>
+        <div class="pyq-card" id="pq1"><div class="pyq-co" style="background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.3);color:#5eead4">M</div><div class="pyq-info"><div class="pyq-name">Microsoft &mdash; Data Scientist</div><div class="pyq-meta">2024 &middot; ML + Behavioural</div></div><div class="pyq-count">36 Qs</div></div>
+        <div class="pyq-card" id="pq2"><div class="pyq-co" style="background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:#fdba74">A</div><div class="pyq-info"><div class="pyq-name">Amazon &mdash; ML Engineer</div><div class="pyq-meta">2023 &middot; Leadership + Coding</div></div><div class="pyq-count">52 Qs</div></div>
+      </div>
     </div>
   </div>
-  <div class="dots">
-    <div class="dot active" id="d0"></div>
-    <div class="dot" id="d1"></div>
-    <div class="dot" id="d2"></div>
-    <div class="dot" id="d3"></div>
+  <div class="tabs">
+    <div class="tab active" id="tab0" onclick="goSlide(0)"><span class="tab-icon">&#128202;</span>Career</div>
+    <div class="tab" id="tab1" onclick="goSlide(1)"><span class="tab-icon">&#128196;</span>Resume</div>
+    <div class="tab" id="tab2" onclick="goSlide(2)"><span class="tab-icon">&#127908;</span>Interview</div>
+    <div class="tab" id="tab3" onclick="goSlide(3)"><span class="tab-icon">&#128194;</span>PYQ</div>
   </div>
 </div>
 </div>
 <script>
-var cur=0;
+var cur=0,timer=null,VALS=[90,78,88];
+function animCount(el,t,d){var s=0,step=t/(d/16);var iv=setInterval(function(){s=Math.min(s+step,t);el.textContent=Math.round(s)+'%';if(s>=t)clearInterval(iv);},16);}
+function animAts(el,t,d){var s=0,step=t/(d/16);var iv=setInterval(function(){s=Math.min(s+step,t);el.textContent=Math.round(s);if(s>=t)clearInterval(iv);},16);}
 function anim(i){
-  if(i===0||i===3){
-    var p=i===0?'0':'3',bv=i===0?['80%','65%','90%']:['55%','90%','78%'];
-    ['a','b','c'].forEach(function(s,j){setTimeout(function(){var e=document.getElementById('c'+p+s);if(e)e.classList.add('show');},300+j*180);});
-    setTimeout(function(){['a','b','c'].forEach(function(s,j){var e=document.getElementById('b'+p+s);if(e)e.style.width=bv[j];});},900);
+  if(i===0){
+    ['cc0','cc1','cc2'].forEach(function(id,j){setTimeout(function(){var e=document.getElementById(id);if(e)e.classList.add('show');},300+j*180);});
+    setTimeout(function(){VALS.forEach(function(v,j){var b=document.getElementById('bf'+j);var p=document.getElementById('pct'+j);if(b)b.style.width=v+'%';if(p)animCount(p,v,1200);});},700);
   }
   if(i===1){
-    ['rh','r0','r1','r2','r3','r4','r5'].forEach(function(id,j){setTimeout(function(){var e=document.getElementById(id);if(e)e.classList.add('go');},200+j*110);});
-    setTimeout(function(){var b=document.getElementById('ats');if(b)b.style.opacity='1';},200+7*110+250);
+    ['rmh','rl0','rl1','rl2','rl3','rl4','rl5','rl6'].forEach(function(id,j){setTimeout(function(){var e=document.getElementById(id);if(e)e.classList.add('go');},200+j*90);});
+    setTimeout(function(){var b=document.getElementById('atsbadge');var s=document.getElementById('atsscore');if(b)b.classList.add('show');if(s)animAts(s,94,900);},200+8*90+200);
   }
   if(i===2){
-    var q=document.getElementById('qb'),a=document.getElementById('ab');
-    if(q){q.classList.remove('show');void q.offsetWidth;q.classList.add('show');}
-    if(a){a.classList.remove('show');void a.offsetWidth;a.classList.add('show');}
+    var seq=[{id:'typ0',d:0},{id:'bub0',d:600,r:'typ0'},{id:'bub1',d:1300},{id:'typ1',d:1800},{id:'bub2',d:2500,r:'typ1'},{id:'scorerow',d:3000}];
+    seq.forEach(function(s){setTimeout(function(){var e=document.getElementById(s.id);if(e)e.classList.add('show');if(s.r){var rm=document.getElementById(s.r);if(rm){rm.classList.remove('show');rm.style.opacity='0';}}},s.d);});
+  }
+  if(i===3){
+    ['pq0','pq1','pq2'].forEach(function(id,j){setTimeout(function(){var e=document.getElementById(id);if(e)e.classList.add('show');},250+j*200);});
   }
 }
 function reset(i){
-  if(i===0||i===3){
-    var p=i===0?'0':'3';
-    ['a','b','c'].forEach(function(s){var e=document.getElementById('c'+p+s);if(e){e.classList.remove('show');e.style.opacity='0';e.style.transform='translateY(7px)';}});
-    ['a','b','c'].forEach(function(s){var e=document.getElementById('b'+p+s);if(e)e.style.width='0%';});
-  }
-  if(i===1){
-    ['rh','r0','r1','r2','r3','r4','r5'].forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('go');});
-    var b=document.getElementById('ats');if(b)b.style.opacity='0';
-  }
-  if(i===2){
-    var q=document.getElementById('qb'),a=document.getElementById('ab');
-    if(q){q.classList.remove('show');q.style.opacity='0';}
-    if(a){a.classList.remove('show');a.style.opacity='0';}
-  }
+  if(i===0){['cc0','cc1','cc2'].forEach(function(id){var e=document.getElementById(id);if(e){e.classList.remove('show');e.style.opacity='0';e.style.transform='translateX(-10px)';}});[0,1,2].forEach(function(j){var b=document.getElementById('bf'+j);if(b)b.style.width='0%';var p=document.getElementById('pct'+j);if(p)p.textContent='0%';});}
+  if(i===1){['rmh','rl0','rl1','rl2','rl3','rl4','rl5','rl6'].forEach(function(id){var e=document.getElementById(id);if(e)e.classList.remove('go');});var b=document.getElementById('atsbadge');if(b)b.classList.remove('show');var s=document.getElementById('atsscore');if(s)s.textContent='0';}
+  if(i===2){['typ0','bub0','bub1','typ1','bub2','scorerow'].forEach(function(id){var e=document.getElementById(id);if(e){e.classList.remove('show');e.style.opacity='0';e.style.transform='translateY(8px)';}});}
+  if(i===3){['pq0','pq1','pq2'].forEach(function(id){var e=document.getElementById(id);if(e){e.classList.remove('show');e.style.opacity='0';e.style.transform='translateY(8px)';}});}
 }
-function go(n){
-  var p=cur,pe=document.getElementById('s'+p),ne=document.getElementById('s'+n);
-  var pd=document.getElementById('d'+p),nd=document.getElementById('d'+n);
+function goSlide(n){
+  if(n===cur)return;
+  clearTimeout(timer);
+  var pe=document.getElementById('sl'+cur),ne=document.getElementById('sl'+n);
+  var pt=document.getElementById('tab'+cur),nt=document.getElementById('tab'+n);
   if(pe){pe.classList.remove('active');pe.classList.add('exit');}
-  setTimeout(function(){if(pe)pe.classList.remove('exit');reset(p);},600);
-  setTimeout(function(){if(ne)ne.classList.add('active');if(pd)pd.classList.remove('active');if(nd)nd.classList.add('active');cur=n;anim(n);},300);
+  if(pt)pt.classList.remove('active');
+  setTimeout(function(){if(pe)pe.classList.remove('exit');reset(cur);},550);
+  setTimeout(function(){if(ne)ne.classList.add('active');if(nt)nt.classList.add('active');cur=n;anim(n);schedNext();},280);
 }
-anim(0);
-setInterval(function(){go((cur+1)%4);},5500);
-
-// Relay mouse position to parent for custom cursor tracking
-document.addEventListener('mousemove', function(e) {
-  var rect = window.frameElement ? window.frameElement.getBoundingClientRect() : {left:0, top:0};
-  window.parent.postMessage({type:'ns-move', x: e.clientX + rect.left, y: e.clientY + rect.top}, '*');
-}, {passive: true});
+function schedNext(){clearTimeout(timer);timer=setTimeout(function(){goSlide((cur+1)%4);},5800);}
+anim(0);schedNext();
+document.addEventListener('mousemove',function(e){var rect=window.frameElement?window.frameElement.getBoundingClientRect():{left:0,top:0};window.parent.postMessage({type:'ns-move',x:e.clientX+rect.left,y:e.clientY+rect.top},'*');},{passive:true});
 </script>
 </body>
-</html>""", height=310, scrolling=False)
+</html>""", height=360, scrolling=False)
+
 
 
 # ==================== TAB RENDER FUNCTIONS ====================
@@ -4546,8 +4617,8 @@ def main():
     ui.apply_custom_css()
 
     # ── Query param routing (browser back/forward) ────────────────────────
-    qp = st.query_params.get("page", "home")
-    if qp != st.session_state.get('current_page', 'home'):
+    qp = st.query_params.get("page", "")
+    if qp and qp != st.session_state.get('current_page', 'home'):
         st.session_state['current_page'] = qp
 
     # Sidebar (returns settings needed by tabs)

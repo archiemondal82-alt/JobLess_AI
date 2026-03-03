@@ -4263,9 +4263,13 @@ def main():
 
     ui.apply_custom_css()
 
-    # ── Floating hamburger nav (right side) ───────────────────────────────
+    # ── Query param routing (browser back/forward) ────────────────────────
+    qp = st.query_params.get("page", "home")
+    if qp != st.session_state.get('current_page', 'home'):
+        st.session_state['current_page'] = qp
+
+    # ── Floating hamburger nav (right side) via components.html ───────────
     page_now = st.session_state.get('current_page', 'home')
-    nav_items_html = ""
     nav_defs = [
         ('home',      '🏠', 'Home'),
         ('career',    '📊', 'Career Analysis'),
@@ -4276,50 +4280,78 @@ def main():
         ('compare',   '⚖️',  'Compare'),
         ('history',   '🕒', 'History'),
     ]
+    nav_items_html = ""
     for key, icon, label in nav_defs:
         active_cls = ' active' if page_now == key else ''
         nav_items_html += f'<div class="nav-item{active_cls}" data-page="{key}">{icon}&nbsp;&nbsp;{label}</div>\n'
 
-    hamburger_html = f"""
-    <div id="jl-nav-overlay"></div>
-    <div id="jl-nav-panel">
-        <div class="nav-label">Navigation</div>
-        {nav_items_html}
-    </div>
-    <div id="jl-hamburger" title="Menu">
-        <span></span><span></span><span></span>
-    </div>
-    <script>
-    (function() {{
-        var btn   = document.getElementById('jl-hamburger');
-        var panel = document.getElementById('jl-nav-panel');
-        var overlay = document.getElementById('jl-nav-overlay');
-        function close() {{
-            btn.classList.remove('open');
-            panel.classList.remove('open');
-            overlay.classList.remove('open');
-        }}
-        btn.addEventListener('click', function(e) {{
-            e.stopPropagation();
-            var isOpen = panel.classList.contains('open');
-            if (isOpen) {{ close(); }} else {{
-                btn.classList.add('open');
-                panel.classList.add('open');
-                overlay.classList.add('open');
-            }}
-        }});
-        overlay.addEventListener('click', close);
-        document.querySelectorAll('.nav-item').forEach(function(item) {{
-            item.addEventListener('click', function() {{
-                var page = item.getAttribute('data-page');
-                window.parent.postMessage({{ type: 'jl-nav', page: page }}, '*');
-                close();
-            }});
-        }});
-    }})();
-    </script>
-    """
-    st.markdown(hamburger_html, unsafe_allow_html=True)
+    hamburger_comp = f"""
+<!DOCTYPE html><html><head><style>
+*{{margin:0;padding:0;box-sizing:border-box;}}
+html,body{{background:transparent;overflow:hidden;}}
+#jl-hamburger{{
+  position:fixed;top:14px;right:14px;z-index:9999;
+  width:42px;height:42px;
+  background:rgba(6,12,24,0.6);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(0,210,255,0.25);border-radius:11px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  cursor:pointer;transition:all 0.2s ease;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+}}
+#jl-hamburger:hover{{background:rgba(0,210,255,0.14);border-color:rgba(0,210,255,0.55);box-shadow:0 0 18px rgba(0,210,255,0.25);}}
+#jl-hamburger span{{display:block;width:17px;height:1.5px;background:#00d2ff;border-radius:2px;transition:all 0.25s ease;}}
+#jl-hamburger.open span:nth-child(1){{transform:translateY(6.5px) rotate(45deg);}}
+#jl-hamburger.open span:nth-child(2){{opacity:0;transform:scaleX(0);}}
+#jl-hamburger.open span:nth-child(3){{transform:translateY(-6.5px) rotate(-45deg);}}
+#jl-nav-panel{{
+  position:fixed;top:0;right:0;width:230px;height:100vh;
+  background:rgba(5,9,18,0.96);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-left:1px solid rgba(0,210,255,0.12);z-index:9998;
+  transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  padding:68px 16px 24px 16px;display:flex;flex-direction:column;gap:3px;
+  box-shadow:-8px 0 40px rgba(0,0,0,0.6);overflow-y:auto;
+}}
+#jl-nav-panel.open{{transform:translateX(0);}}
+.nav-label{{font-family:monospace;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,210,255,0.35);margin:0 0 10px 4px;}}
+.nav-item{{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid transparent;cursor:pointer;font-family:sans-serif;font-size:0.88rem;font-weight:500;color:#64748b;transition:all 0.18s ease;}}
+.nav-item:hover{{background:rgba(0,210,255,0.08);border-color:rgba(0,210,255,0.18);color:#e2e8f0;}}
+.nav-item.active{{background:rgba(0,210,255,0.11);border-color:rgba(0,210,255,0.28);color:#00d2ff;font-weight:600;}}
+#jl-overlay{{position:fixed;inset:0;z-index:9997;display:none;}}
+#jl-overlay.open{{display:block;}}
+</style></head><body>
+<div id="jl-overlay"></div>
+<div id="jl-nav-panel"><div class="nav-label">Navigation</div>{nav_items_html}</div>
+<div id="jl-hamburger"><span></span><span></span><span></span></div>
+<script>
+var btn=document.getElementById('jl-hamburger');
+var panel=document.getElementById('jl-nav-panel');
+var overlay=document.getElementById('jl-overlay');
+function closeMenu(){{btn.classList.remove('open');panel.classList.remove('open');overlay.classList.remove('open');}}
+btn.addEventListener('click',function(e){{
+  e.stopPropagation();
+  panel.classList.contains('open')?closeMenu():(btn.classList.add('open'),panel.classList.add('open'),overlay.classList.add('open'));
+}});
+overlay.addEventListener('click',closeMenu);
+document.querySelectorAll('.nav-item').forEach(function(item){{
+  item.addEventListener('click',function(){{
+    var page=item.getAttribute('data-page');
+    window.parent.postMessage({{type:'jl-nav',page:page}},'*');
+    // also update URL for browser back/forward
+    try{{window.parent.history.pushState({{page:page}},'','?page='+page);}}catch(e){{}}
+    closeMenu();
+  }});
+}});
+// Listen for browser popstate (back/forward)
+window.parent.addEventListener('popstate',function(e){{
+  var p=(e.state&&e.state.page)||new URLSearchParams(window.parent.location.search).get('page')||'home';
+  window.parent.postMessage({{type:'jl-nav',page:p}},'*');
+}});
+</script>
+</body></html>
+"""
+    components.html(hamburger_comp, height=60, scrolling=False)
 
     # Sidebar (returns settings needed by tabs)
     selected_provider, selected_model, analysis_depth, include_learning_path, include_interview_prep = \
@@ -4345,14 +4377,13 @@ def main():
 
     # Hidden nav buttons — triggered by postMessage from iframes (spotlight cards, Get Started)
     # Invisible Streamlit buttons; cursor JS finds them by data-jl-nav attribute injected via JS
-    _nav_pages = ['career', 'history', 'compare',
+    _nav_pages = ['home', 'career', 'history', 'compare',
                   'resources', 'resume', 'interview', 'pyq']
     for _np in _nav_pages:
-        # Label matches exactly what cursor_js looks for: "jlnav" + page (no spaces, lowercase)
         if st.button(f"jlnav{_np}", key=f"_jlnav_{_np}"):
             st.session_state['current_page'] = _np
+            st.query_params["page"] = _np
             st.rerun()
-    # (MutationObserver in cursor_js hides these buttons and wires them to postMessage)
 
     # Home: spline scene is the hero — no duplicate heading needed
     if page == 'home':

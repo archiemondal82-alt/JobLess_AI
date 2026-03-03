@@ -205,6 +205,17 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           animation: spin 0.9s linear infinite;
         }}
         @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+
+        /* ── MOBILE: hide text, robot takes full width ── */
+        @media (max-width: 600px) {{
+          .left-panel {{ display: none !important; }}
+          .right-panel {{ flex: 1 !important; width: 100% !important; }}
+          .wrapper {{ height: {height}px !important; }}
+        }}
+        @media (min-width: 601px) and (max-width: 900px) {{
+          .left-panel {{ flex: 0 0 38%; padding: 16px 20px; }}
+          .left-panel h1 {{ font-size: 1.6rem; }}
+        }}
       </style>
     </head>
     <body>

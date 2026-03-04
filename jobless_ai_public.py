@@ -3668,7 +3668,63 @@ def _render_conversational_interview(ai_handler, selected_model: str):
     )
     _cmp.html(avatar_html, height=450, scrolling=False)
 
-    # ── Hidden bridge form — receives answer from iframe via JS ─────────
+    # ── Always-visible action bar below avatar ───────────────────────────
+    # This stays persistent across reruns — user can ALWAYS get their review
+    exchanges = len([m for m in messages if m["role"] == "user"])
+
+    action_cols = st.columns([3, 2])
+    with action_cols[0]:
+        # Show "Get My Review" prominently after 3+ exchanges
+        if exchanges >= 3:
+            st.markdown(
+                '<div style="font-family:DM Mono,monospace;font-size:.6rem;'
+                'color:rgba(34,197,94,.7);letter-spacing:.1em;text-transform:uppercase;'
+                'margin-bottom:5px;">✅ Done answering? Get your full review →</div>',
+                unsafe_allow_html=True
+            )
+            if st.button(
+                "🏁 Finish Interview & Get My Review",
+                key="conv_wrapup_persistent",
+                use_container_width=True,
+                type="primary",
+            ):
+                st.session_state.conv_interview_messages.append({
+                    "role": "user",
+                    "content": "That's all from my side. I've answered all the questions. Please wrap up now and give me my full Head of Talent review."
+                })
+                with st.spinner("🤖 Generating your full review..."):
+                    ai_reply = ai_handler.chat_interview_turn(
+                        messages=st.session_state.conv_interview_messages,
+                        role=role, level=level, model_name=selected_model,
+                    )
+                st.session_state.conv_interview_messages.append(
+                    {"role": "assistant", "content": ai_reply}
+                )
+                st.session_state.conv_interview_done = True
+                st.rerun()
+            st.markdown(
+                f'<div style="color:#334155;font-size:.78rem;padding:10px 0;">'
+                f'💬 {max(0, 3 - exchanges)} more exchange(s) before review becomes available</div>',
+                unsafe_allow_html=True
+            )
+    with action_cols[1]:
+        st.markdown('<div style="height:22px"></div>', unsafe_allow_html=True)
+        if st.button("⏭️ Skip this question", key="conv_skip_persistent", use_container_width=True):
+            st.session_state.conv_interview_messages.append({
+                "role": "user", "content": "Let me skip this one and move on."
+            })
+            with st.spinner("🤖 Moving to next question..."):
+                ai_reply = ai_handler.chat_interview_turn(
+                    messages=st.session_state.conv_interview_messages,
+                    role=role, level=level, model_name=selected_model,
+                )
+            st.session_state.conv_interview_messages.append(
+                {"role": "assistant", "content": ai_reply}
+            )
+            st.rerun()
+
+    st.markdown("<hr style='border-color:rgba(255,255,255,.05);margin:8px 0 4px;'>",
+                unsafe_allow_html=True)
     # The iframe fills this input + clicks this button automatically.
     # User never has to type or copy-paste anything.
     with st.form("jl_voice_bridge_form", clear_on_submit=True):
@@ -3740,7 +3796,9 @@ def _render_conversational_interview(ai_handler, selected_model: str):
         review_triggers = [
             "let me take off the interviewer hat",
             "interview over", "overall impression",
-            "score:", "biggest red flag", "head of talent"
+            "score:", "biggest red flag", "head of talent",
+            "📋", "⭐", "✅ **strengths", "⚠️ **areas",
+            "🎯 **verdict", "📈 **top 3"
         ]
         if any(t in ai_reply.lower() for t in review_triggers):
             st.session_state.conv_interview_done = True

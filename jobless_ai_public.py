@@ -3788,10 +3788,14 @@ canvas#face{border-radius:50%;display:block;margin-bottom:14px;position:relative
     </div>
 
     <div id="btns">
-      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Hold to speak">🎤</button>
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Click to speak">🎤</button>
       <button class="clear-btn" onclick="clearTranscript()">Clear</button>
-      <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">
+      <button class="submit-btn" id="submitBtn" onclick="submitAnswer('answer')">
         ✅ Submit Answer
+      </button>
+      <button class="submit-btn" id="wrapBtn" onclick="submitAnswer('wrapup')"
+              style="background:linear-gradient(135deg,rgba(34,197,94,0.25),rgba(0,210,255,0.15));border-color:rgba(34,197,94,0.5);flex:0 0 auto;padding:0 14px;font-size:.72rem;">
+        🏁 Wrap Up
       </button>
     </div>
   </div>
@@ -4012,19 +4016,38 @@ function clearTranscript(){
 function getTranscriptText(){
   var el=document.getElementById('transcript');
   var t=finalT.trim()||el.textContent.trim();
-  if(t==='Speak or type your answer...') t='';
+  if(t==='Speak or type your answer...'||t==='') return '';
   return t;
 }
 
-function submitAnswer(){
-  // Stop mic if running
+function submitAnswer(mode){
   if(isListening) stopListening();
-  var t = getTranscriptText();
-  if(!t){ alert('Please speak or type your answer first.'); return; }
+  var t = mode==='wrapup'
+    ? 'WRAPUP_SIGNAL'
+    : getTranscriptText();
+  if(mode!=='wrapup' && !t){ alert('Please speak or type your answer first.'); return; }
+  // Disable both buttons
   document.getElementById('submitBtn').disabled=true;
-  document.getElementById('submitBtn').textContent='Submitting...';
-  // Send to parent Streamlit
-  try{window.parent.postMessage({type:'jl-voice-submit',text:t},'*');}catch(e){}
+  document.getElementById('wrapBtn').disabled=true;
+  document.getElementById('submitBtn').textContent='Sending...';
+  // Fill hidden input in parent and trigger form submit
+  try{
+    var inp = window.parent.document.getElementById('jl_bridge_input');
+    if(inp){
+      var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+      setter.call(inp, t);
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
+      // Small delay then click the hidden submit button
+      setTimeout(function(){
+        var btn = window.parent.document.getElementById('jl_bridge_btn');
+        if(btn) btn.click();
+      }, 120);
+    }
+    // Also postMessage as fallback
+    window.parent.postMessage({type:'jl-voice-submit', text:t, mode:mode},'*');
+  }catch(e){
+    window.parent.postMessage({type:'jl-voice-submit', text:t, mode:mode},'*');
+  }
 }
 
 // Allow editing transcript directly
@@ -4359,56 +4382,64 @@ def _render_conversational_interview(ai_handler, selected_model: str):
     )
     _cmp.html(avatar_html, height=450, scrolling=False)
 
-    # ── Answer input + Submit — simple and direct ────────────────────────
-    st.markdown(
-        '<div style="font-family:DM Mono,monospace;font-size:.62rem;color:rgba(0,210,255,.6);'
-        'text-transform:uppercase;letter-spacing:.1em;margin:10px 0 4px;">'
-        '📝 Your Answer '
-        '<span style="color:#475569;font-size:.55rem;text-transform:none;letter-spacing:0;">'
-        '— copy your spoken text from above, or just type here</span></div>',
-        unsafe_allow_html=True
-    )
-
-    user_answer = st.text_area(
-        "answer",
-        key="conv_voice_answer",
-        placeholder="Type or paste your answer here, then click Submit...",
-        height=110,
-        label_visibility="collapsed"
-    )
-
-    b1, b2, b3 = st.columns([2, 2, 1])
-    submit_clicked = False
-    wrap_up = False
-    skip = False
-
-    with b1:
-        submit_clicked = st.button(
-            "✅ Submit Answer", key="conv_submit_voice",
-            use_container_width=True, type="primary"
+    # ── Hidden bridge form — receives answer from iframe via JS ─────────
+    # The iframe fills this input + clicks this button automatically.
+    # User never has to type or copy-paste anything.
+    with st.form("jl_voice_bridge_form", clear_on_submit=True):
+        bridge_answer = st.text_input(
+            "bridge",
+            key="jl_bridge_input_val",
+            label_visibility="collapsed",
         )
-    with b2:
-        wrap_up = st.button(
-            "🏁 Wrap up — give me my review", key="conv_wrapup_voice",
-            use_container_width=True
+        bridge_submitted = st.form_submit_button(
+            "bridge_submit",
+            use_container_width=False,
         )
-    with b3:
-        skip = st.button("⏭️ Skip", key="conv_skip", use_container_width=True)
 
-    # Determine final input — clean and explicit
-    final_input = None
-    if wrap_up:
-        final_input = "That's all from my side. No more questions. Please wrap up and give me my full Head of Talent review now."
-    elif skip:
-        final_input = "I'll skip this question."
-    elif submit_clicked:
-        ans = (user_answer or "").strip()
-        if not ans:
-            st.warning("⚠️ Please type your answer first, then click Submit.")
+    # Inject IDs onto the hidden form elements so the iframe JS can find them
+    _cmp.html("""
+    <script>
+    (function tryBridge(){
+      try {
+        var doc = window.parent.document;
+        // Find the text input (last added stTextInput that has no visible label)
+        var inputs = doc.querySelectorAll('input[type="text"]');
+        inputs.forEach(function(inp){
+          if(!inp.id) inp.id = 'jl_bridge_input';
+          else if(inp.id !== 'jl_bridge_input') return;
+        });
+        // More reliable: tag by aria-label or placeholder
+        var allInputs = doc.querySelectorAll('div[data-testid="stTextInput"] input');
+        if(allInputs.length > 0){
+          var last = allInputs[allInputs.length-1];
+          last.id = 'jl_bridge_input';
+        }
+        // Tag the submit button
+        var allBtns = doc.querySelectorAll('div[data-testid="stFormSubmitButton"] button');
+        if(allBtns.length > 0){
+          var lastBtn = allBtns[allBtns.length-1];
+          lastBtn.id = 'jl_bridge_btn';
+          lastBtn.style.cssText = 'position:fixed!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;';
+        }
+        // Hide the text input too
+        var bridgeWrap = doc.querySelectorAll('div[data-testid="stTextInput"]');
+        if(bridgeWrap.length > 0){
+          bridgeWrap[bridgeWrap.length-1].style.cssText = 'position:fixed!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;overflow:hidden!important;';
+        }
+      } catch(e){}
+    })();
+    </script>
+    """, height=0)
+
+    # Process submitted answer
+    if bridge_submitted and bridge_answer:
+        answer_text = bridge_answer.strip()
+
+        if answer_text == "WRAPUP_SIGNAL":
+            final_input = "That's all from my side. No more questions. Please wrap up and give me my full Head of Talent review now."
         else:
-            final_input = ans
+            final_input = answer_text
 
-    if final_input is not None:
         st.session_state.conv_interview_messages.append(
             {"role": "user", "content": final_input}
         )

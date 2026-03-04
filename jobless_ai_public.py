@@ -2284,7 +2284,6 @@ document.addEventListener('mousemove',function(e){var rect=window.frameElement?w
 </html>""", height=360, scrolling=False)
 
 
-
 # ==================== TAB RENDER FUNCTIONS ====================
 
 def render_tab_career_analysis(ai_handler: AIHandler, pdf_handler: PDFHandler,
@@ -2417,8 +2416,10 @@ def _render_career_results(data: Dict):
         tips_html = "".join(
             f'<div class="tip-item">{t}</div>' for t in job.get('interview_tips', []))
         learning_path = job.get('learning_path', [])
-        learn_html = "".join(f'<div class="learn-item">{x}</div>' for x in learning_path)
-        yt_query = "+".join((job["title"] + " " + " ".join(learning_path[:2])).split())
+        learn_html = "".join(
+            f'<div class="learn-item">{x}</div>' for x in learning_path)
+        yt_query = "+".join((job["title"] + " " +
+                            " ".join(learning_path[:2])).split())
         yt_url = f"https://www.youtube.com/results?search_query={yt_query}+tutorial"
         yt_course_url = f"https://www.youtube.com/results?search_query={yt_query}+full+course"
         if learning_path:
@@ -2811,13 +2812,10 @@ WORK EXPERIENCE
     )
 
 
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # VOICE INTERVIEW — Python-driven (AI calls stay in Python, no CORS issues)
 # HTML component handles ONLY: TTS (AI speaks) + webcam + STT (mic capture)
 # ──────────────────────────────────────────────────────────────────────────────
-
 _VOICE_UI_HTML = """<!DOCTYPE html>
 <html>
 <head>
@@ -3080,8 +3078,10 @@ function speakQuestion(txt) {
 def _build_voice_ui_html(question_text: str, scores: list) -> str:
     """Build the TTS+webcam+STT HTML component with current question injected."""
     import json
-    q_safe = question_text.replace('"', '&quot;').replace("'", '&#39;').replace('\n', ' ')
-    q_js   = question_text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', ' ')
+    q_safe = question_text.replace('"', '&quot;').replace(
+        "'", '&#39;').replace('\n', ' ')
+    q_js = question_text.replace('\\', '\\\\').replace(
+        '"', '\\"').replace('\n', ' ')
     scores_html = ""
     scores_json = json.dumps(scores)
     return (_VOICE_UI_HTML
@@ -3092,48 +3092,149 @@ def _build_voice_ui_html(question_text: str, scores: list) -> str:
 
 
 def _voice_score_color(score: int) -> str:
-    if score >= 85: return "#22c55e"
-    if score >= 70: return "#00d2ff"
-    if score >= 55: return "#f59e0b"
+    if score >= 85:
+        return "#22c55e"
+    if score >= 70:
+        return "#00d2ff"
+    if score >= 55:
+        return "#f59e0b"
     return "#ef4444"
+
+
+def _get_conversational_ai_response(ai_handler, question: str, user_answer: str, 
+                                   role: str, model: str, conversation_history: List[Dict] = None) -> str:
+    """
+    Get conversational AI feedback - like Claude/Gemini would provide.
+    More than just evaluation - real interview conversation.
+    
+    Args:
+        ai_handler: Your AIHandler instance
+        question: The interview question asked
+        user_answer: The user's answer
+        role: The job role
+        model: The AI model to use
+        conversation_history: Previous conversation turns (optional)
+    
+    Returns:
+        Conversational feedback string
+    """
+    
+    system_prompt = f"""You are an expert technical interviewer conducting a mock interview for a {role} position.
+
+Your role:
+1. EVALUATE: Assess the quality of the candidate's answer
+2. GUIDE: Provide constructive feedback and suggestions for improvement
+3. ENCOURAGE: Give praise for good points and boost confidence
+4. PROBE: Ask relevant follow-up questions if the answer is incomplete
+5. TEACH: Offer insights and best practices
+
+Format your response as a natural conversation, not a formal report. Be warm, professional, and genuinely helpful - like a senior mentor would be."""
+    
+    user_prompt = f"""Question asked: "{question}"
+
+Candidate's answer: "{user_answer}"
+
+Please provide:
+1. A brief assessment (1-2 sentences) of the key strengths
+2. 2-3 specific areas for improvement with examples
+3. A relevant follow-up question to deepen the discussion
+4. A brief encouragement or tip
+
+Speak naturally - this is a conversation, not a report."""
+    
+    # Build conversation with history if provided
+    messages = []
+    if conversation_history:
+        messages.extend(conversation_history)
+    
+    messages.append({"role": "user", "content": user_prompt})
+    
+    # Call AI with system prompt
+    try:
+        response = ai_handler.client.messages.create(
+            model=model,
+            max_tokens=400,
+            system=system_prompt,
+            messages=messages
+        )
+        return response.content[0].text
+    except Exception as e:
+        return f"Could not generate conversational response: {str(e)}"
 
 
 def _render_voice_interview_agent(ai_handler, selected_model: str):
     """Python-driven voice interview. AI calls stay in Python (no CORS). HTML only does TTS+STT+webcam."""
     import streamlit.components.v1 as _cmp
 
-    role  = st.session_state.get("voice_mi_role",  "Software Engineer")
+    role = st.session_state.get("voice_mi_role",  "Software Engineer")
     level = st.session_state.get("voice_mi_level", "Fresher")
 
     # ── Step 0: Generate questions once ──────────────────────────
     if "voice_questions" not in st.session_state or not st.session_state.voice_questions:
         with st.spinner("🧠 Generating your interview questions..."):
-            qs = ai_handler.generate_interview_questions(role, level, selected_model)
+            qs = ai_handler.generate_interview_questions(
+                role, level, selected_model)
         if not qs:
-            st.error("❌ Failed to generate questions. Check your API key in the sidebar.")
+            st.error(
+                "❌ Failed to generate questions. Check your API key in the sidebar.")
             if st.button("🔄 Try Again"):
                 st.rerun()
             return
         # Trim to 6 questions max for voice mode
-        st.session_state.voice_questions  = qs[:6]
-        st.session_state.voice_q_index    = 0
-        st.session_state.voice_answers    = {}
-        st.session_state.voice_scores     = {}
-        st.session_state.voice_feedbacks  = {}
-        st.session_state.voice_done       = False
+        st.session_state.voice_questions = qs[:6]
+        st.session_state.voice_q_index = 0
+        st.session_state.voice_answers = {}
+        st.session_state.voice_ai_responses = {}  # NEW: Store conversational AI feedback
+        st.session_state.voice_done = False
         st.rerun()
 
-    questions  = st.session_state.voice_questions
-    q_idx      = st.session_state.voice_q_index
-    answers    = st.session_state.voice_answers
-    scores     = st.session_state.voice_scores
-    feedbacks  = st.session_state.voice_feedbacks
-    total      = len(questions)
-    done       = st.session_state.get("voice_done", False)
+    questions = st.session_state.voice_questions
+    q_idx = st.session_state.voice_q_index
+    answers = st.session_state.voice_answers
+    ai_responses = st.session_state.get("voice_ai_responses", {})  # NEW: Get conversational responses
+    total = len(questions)
+    done = st.session_state.get("voice_done", False)
 
     # ── FINAL REPORT ─────────────────────────────────────────────
     if done:
-        _render_voice_final_report(ai_handler, selected_model, role, level, questions, answers, scores, feedbacks)
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(0,210,255,.1));border:2px solid rgba(34,197,94,.3);border-radius:16px;padding:24px;text-align:center;">
+            <div style="font-size:2.5rem;margin-bottom:12px;">🎉</div>
+            <div style="color:#22c55e;font-weight:700;font-size:1.2rem;margin-bottom:12px;">Interview Complete!</div>
+            <div style="color:#e2e8f0;font-size:0.95rem;line-height:1.7;margin-bottom:16px;">
+                You've completed all questions. Great job on your performance!<br>
+                Check the feedback below for your answers.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        st.subheader("📋 Your Answers & Feedback")
+        
+        for i, q in enumerate(questions):
+            q_id = str(i)
+            if q_id in answers:
+                st.markdown(f"""
+                <div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:12px;padding:14px;margin:12px 0;">
+                    <div style="color:#a855f7;font-weight:700;margin-bottom:8px;">Q{i+1}. {q.get('question', '')}</div>
+                    <div style="color:#e2e8f0;font-size:0.9rem;margin-bottom:12px;padding:8px;background:rgba(0,210,255,.05);border-radius:8px;">
+                        <strong>Your Answer:</strong><br>{answers[q_id]}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if q_id in ai_responses:
+                    st.markdown(f"""
+                    <div style="background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(0,210,255,.08));border:1px solid rgba(168,85,247,.3);border-radius:12px;padding:14px;margin:0 0 16px 0;">
+                        <div style="color:#a855f7;font-weight:600;margin-bottom:8px;">🤖 AI Interviewer Feedback:</div>
+                        <div style="color:#e2e8f0;line-height:1.7;font-size:0.9rem;white-space:pre-wrap;">{ai_responses[q_id]}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        if st.button("🔄 Take Another Interview", use_container_width=True):
+            for k in ("voice_questions", "voice_q_index", "voice_answers", "voice_ai_responses", "voice_done", "voice_interview_active"):
+                st.session_state.pop(k, None)
+            st.rerun()
         return
 
     # ── HEADER ────────────────────────────────────────────────────
@@ -3159,16 +3260,16 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
     # ── Current question ──────────────────────────────────────────
     current_q = questions[q_idx]
     q_text = current_q.get("question", "")
-    cat    = current_q.get("category", "General")
-    diff   = current_q.get("difficulty", "Medium")
-    cat_colors = {"Behavioral":"#00d2ff","Technical":"#a855f7","Problem Solving":"#f59e0b",
-                  "Situational":"#22c55e","Culture Fit":"#ec4899","Role-specific Scenario":"#f97316"}
+    cat = current_q.get("category", "General")
+    diff = current_q.get("difficulty", "Medium")
+    cat_colors = {"Behavioral": "#00d2ff", "Technical": "#a855f7", "Problem Solving": "#f59e0b",
+                  "Situational": "#22c55e", "Culture Fit": "#ec4899", "Role-specific Scenario": "#f97316"}
     cat_col = cat_colors.get(cat, "#00d2ff")
-    diff_badge = {"Easy":"🟢","Medium":"🟡","Hard":"🔴"}.get(diff,"🟡")
+    diff_badge = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(diff, "🟡")
 
     # ── HTML panel: TTS speaks question + webcam + STT ───────────
-    scores_list = [scores.get(str(i), 0) for i in range(q_idx) if str(i) in scores]
-    _cmp.html(_build_voice_ui_html(q_text, scores_list), height=280, scrolling=False)
+    _cmp.html(_build_voice_ui_html(q_text, []),
+              height=280, scrolling=False)
 
     # ── Question metadata ─────────────────────────────────────────
     st.markdown(f"""
@@ -3182,11 +3283,11 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
     """, unsafe_allow_html=True)
 
     # ── Answer input ──────────────────────────────────────────────
-    st.markdown('<div style="font-family:DM Mono,monospace;font-size:.65rem;color:rgba(0,210,255,.7);text-transform:uppercase;letter-spacing:.12em;margin:8px 0 4px;">📝 Your Answer <span style="color:#64748b;font-size:.55rem;text-transform:none;letter-spacing:0;"> — speak above then type/paste here, or just type directly</span></div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-family:DM Mono,monospace;font-size:.65rem;color:rgba(0,210,255,.7);text-transform:uppercase;letter-spacing:.12em;margin:8px 0 4px;">📝 Your Answer <span style="color:#22c55e;font-size:.55rem;text-transform:none;letter-spacing:0;"> — Auto-typing ✓ (speech auto-populates below)</span></div>', unsafe_allow_html=True)
     answer_val = answers.get(str(q_idx), "")
     user_answer = st.text_area(
         "Answer", value=answer_val, height=130,
-        placeholder="Speak your answer using the mic above, then paste/type it here...",
+        placeholder="Speak your answer using the mic above - it will auto-populate here!",
         key=f"voice_answer_{q_idx}",
         label_visibility="collapsed"
     )
@@ -3197,23 +3298,36 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
         hint = current_q.get("hint", "")
         if hint:
             with st.expander("💡 Show Hint"):
-                st.markdown(f'<div style="color:#94a3b8;font-size:.88rem;">{hint}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="color:#94a3b8;font-size:.88rem;">{hint}</div>', unsafe_allow_html=True)
     with btn_c2:
-        submit_label = "Submit & Finish →" if q_idx == total - 1 else f"Submit Answer → Q{q_idx+2}"
+        submit_label = "Submit & Finish →" if q_idx == total - \
+            1 else f"Submit Answer → Q{q_idx+2}"
         if st.button(submit_label, type="primary", use_container_width=True, key=f"voice_submit_{q_idx}"):
             if not user_answer.strip():
                 st.warning("⚠️ Please speak or type your answer first.")
             else:
-                st.session_state.voice_answers[str(q_idx)] = user_answer.strip()
-                with st.spinner("🧠 Evaluating your answer..."):
-                    fb = ai_handler.evaluate_interview_answer(
-                        q_text, user_answer.strip(),
-                        current_q.get("ideal_answer_points", []),
-                        role, current_q.get("companies", []), selected_model
+                st.session_state.voice_answers[str(
+                    q_idx)] = user_answer.strip()
+                with st.spinner("🤖 Generating personalized AI feedback..."):
+                    # Get conversational AI response instead of evaluation
+                    ai_feedback = _get_conversational_ai_response(
+                        ai_handler,
+                        q_text,
+                        user_answer.strip(),
+                        role,
+                        selected_model
                     )
-                if fb:
-                    st.session_state.voice_scores[str(q_idx)]    = fb.get("score", 0)
-                    st.session_state.voice_feedbacks[str(q_idx)] = fb
+                    st.session_state.voice_ai_responses[str(q_idx)] = ai_feedback
+                
+                # Display the conversational feedback immediately
+                st.markdown(f"""
+                <div style="background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(0,210,255,.08));border:1px solid rgba(168,85,247,.3);border-radius:12px;padding:14px;margin-top:12px;">
+                    <div style="color:#a855f7;font-weight:600;margin-bottom:8px;">🤖 AI Interviewer Feedback:</div>
+                    <div style="color:#e2e8f0;line-height:1.7;font-size:.9rem;white-space:pre-wrap;">{ai_feedback}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
                 if q_idx + 1 >= total:
                     st.session_state.voice_done = True
                 else:
@@ -3221,41 +3335,45 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
                 st.rerun()
     with btn_c3:
         if st.button("🔄 Restart", use_container_width=True, key="voice_restart"):
-            for k in ("voice_questions","voice_q_index","voice_answers","voice_scores","voice_feedbacks","voice_done","voice_interview_active"):
+            for k in ("voice_questions", "voice_q_index", "voice_answers", "voice_ai_responses", "voice_done", "voice_interview_active"):
                 st.session_state.pop(k, None)
             st.rerun()
 
 
 def _render_voice_final_report(ai_handler, selected_model, role, level, questions, answers, scores, feedbacks):
     """Final verdict screen for voice interview with per-Q breakdown + PDF."""
-    import json, base64
+    import json
+    import base64
     import streamlit.components.v1 as _cmp
 
     total = len(questions)
-    avg_score = round(sum(scores.get(str(i), 0) for i in range(total)) / max(total, 1))
-    grade = ("A+" if avg_score>=90 else "A" if avg_score>=85 else "B+" if avg_score>=80
-             else "B" if avg_score>=75 else "C+" if avg_score>=70 else "C" if avg_score>=60 else "D")
-    grade_col = {"A+":"#22c55e","A":"#22c55e","B+":"#00d2ff","B":"#00d2ff",
-                 "C+":"#f59e0b","C":"#f59e0b","D":"#ef4444"}.get(grade,"#00d2ff")
+    avg_score = round(sum(scores.get(str(i), 0)
+                      for i in range(total)) / max(total, 1))
+    grade = ("A+" if avg_score >= 90 else "A" if avg_score >= 85 else "B+" if avg_score >= 80
+             else "B" if avg_score >= 75 else "C+" if avg_score >= 70 else "C" if avg_score >= 60 else "D")
+    grade_col = {"A+": "#22c55e", "A": "#22c55e", "B+": "#00d2ff", "B": "#00d2ff",
+                 "C+": "#f59e0b", "C": "#f59e0b", "D": "#ef4444"}.get(grade, "#00d2ff")
 
     # Final verdict from AI
     if st.session_state.get("voice_final_verdict") is None:
         all_co = []
-        for q in questions: all_co.extend(q.get("companies",[]))
+        for q in questions:
+            all_co.extend(q.get("companies", []))
         with st.spinner("🧠 Generating final verdict..."):
             vd = ai_handler.generate_final_verdict(role, level, list(dict.fromkeys(all_co))[:4],
-                                                    list(feedbacks.values()), selected_model)
+                                                   list(feedbacks.values()), selected_model)
         st.session_state.voice_final_verdict = vd or {}
 
     vd = st.session_state.get("voice_final_verdict", {})
-    strengths   = vd.get("top_strengths", [])
-    weaknesses  = vd.get("top_weaknesses", [])
+    strengths = vd.get("top_strengths", [])
+    weaknesses = vd.get("top_weaknesses", [])
     action_plan = vd.get("priority_action_plan", [])
-    headline    = vd.get("headline", "")
-    motive      = vd.get("motivational_close", "")
-    can_crack   = vd.get("can_crack_company", "Borderline")
-    crack_msg   = vd.get("crack_verdict_message", "")
-    crack_colors = {"Yes, apply now!":"#22c55e","Almost there":"#00d2ff","Borderline":"#f59e0b","Not yet — keep practising":"#ef4444"}
+    headline = vd.get("headline", "")
+    motive = vd.get("motivational_close", "")
+    can_crack = vd.get("can_crack_company", "Borderline")
+    crack_msg = vd.get("crack_verdict_message", "")
+    crack_colors = {"Yes, apply now!": "#22c55e", "Almost there": "#00d2ff",
+                    "Borderline": "#f59e0b", "Not yet — keep practising": "#ef4444"}
     cc = crack_colors.get(can_crack, "#f59e0b")
 
     # ── Score header ──────────────────────────────────────────────
@@ -3287,8 +3405,8 @@ def _render_voice_final_report(ai_handler, selected_model, role, level, question
         sc = scores.get(str(i), 0)
         fb = feedbacks.get(str(i), {})
         sc_col = _voice_score_color(sc)
-        verdict = fb.get("verdict","")
-        one_liner = fb.get("one_line_reaction","")
+        verdict = fb.get("verdict", "")
+        one_liner = fb.get("one_line_reaction", "")
         st.markdown(f"""
         <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;gap:14px;align-items:flex-start">
           <div style="text-align:center;background:{sc_col}12;border:2px solid {sc_col}30;border-radius:10px;padding:8px 12px;flex-shrink:0">
@@ -3307,33 +3425,40 @@ def _render_voice_final_report(ai_handler, selected_model, role, level, question
     sv_col, wv_col = st.columns(2)
     with sv_col:
         if strengths:
-            st.markdown('<div style="color:#22c55e;font-weight:700;font-size:.85rem;letter-spacing:.05em;margin:12px 0 8px">🌟 TOP STRENGTHS</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div style="color:#22c55e;font-weight:700;font-size:.85rem;letter-spacing:.05em;margin:12px 0 8px">🌟 TOP STRENGTHS</div>', unsafe_allow_html=True)
             for s in strengths:
-                st.markdown(f'<div style="background:rgba(34,197,94,.07);border-left:3px solid #22c55e;border-radius:8px;padding:8px 12px;margin-bottom:6px;color:#94a3b8;font-size:.85rem;line-height:1.5">{s}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="background:rgba(34,197,94,.07);border-left:3px solid #22c55e;border-radius:8px;padding:8px 12px;margin-bottom:6px;color:#94a3b8;font-size:.85rem;line-height:1.5">{s}</div>', unsafe_allow_html=True)
     with wv_col:
         if weaknesses:
-            st.markdown('<div style="color:#ef4444;font-weight:700;font-size:.85rem;letter-spacing:.05em;margin:12px 0 8px">⚠️ TOP WEAKNESSES</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div style="color:#ef4444;font-weight:700;font-size:.85rem;letter-spacing:.05em;margin:12px 0 8px">⚠️ TOP WEAKNESSES</div>', unsafe_allow_html=True)
             for w in weaknesses:
-                st.markdown(f'<div style="background:rgba(239,68,68,.07);border-left:3px solid #ef4444;border-radius:8px;padding:8px 12px;margin-bottom:6px;color:#94a3b8;font-size:.85rem;line-height:1.5">{w}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="background:rgba(239,68,68,.07);border-left:3px solid #ef4444;border-radius:8px;padding:8px 12px;margin-bottom:6px;color:#94a3b8;font-size:.85rem;line-height:1.5">{w}</div>', unsafe_allow_html=True)
 
     if action_plan:
         st.markdown('<div style="color:#00d2ff;font-weight:700;font-size:.85rem;letter-spacing:.05em;margin:12px 0 8px">🎯 PRIORITY ACTION PLAN</div>', unsafe_allow_html=True)
         for i, step in enumerate(action_plan, 1):
-            st.markdown(f'<div style="display:flex;gap:10px;align-items:flex-start;background:rgba(0,210,255,.05);border:1px solid rgba(0,210,255,.1);border-radius:10px;padding:10px 14px;margin-bottom:6px"><div style="background:rgba(0,210,255,.15);color:#00d2ff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;flex-shrink:0">{i}</div><div style="color:#cbd5e1;font-size:.88rem;line-height:1.5">{step}</div></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="display:flex;gap:10px;align-items:flex-start;background:rgba(0,210,255,.05);border:1px solid rgba(0,210,255,.1);border-radius:10px;padding:10px 14px;margin-bottom:6px"><div style="background:rgba(0,210,255,.15);color:#00d2ff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;flex-shrink:0">{i}</div><div style="color:#cbd5e1;font-size:.88rem;line-height:1.5">{step}</div></div>', unsafe_allow_html=True)
 
     if motive:
-        st.markdown(f'<div style="background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(0,210,255,.06));border:1px solid rgba(168,85,247,.2);border-radius:12px;padding:16px 20px;margin-top:12px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">💬</div><div style="color:#e2e8f0;font-size:.9rem;line-height:1.7;font-style:italic">&quot;{motive}&quot;</div></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(0,210,255,.06));border:1px solid rgba(168,85,247,.2);border-radius:12px;padding:16px 20px;margin-top:12px;text-align:center"><div style="font-size:1.4rem;margin-bottom:6px">💬</div><div style="color:#e2e8f0;font-size:.9rem;line-height:1.7;font-style:italic">&quot;{motive}&quot;</div></div>', unsafe_allow_html=True)
 
     # ── PDF Download ──────────────────────────────────────────────
     st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
     pdf_col, restart_col = st.columns([2, 1])
     with pdf_col:
         if st.button("📄 Download PDF Report", type="primary", use_container_width=True, key="voice_pdf"):
-            _generate_voice_pdf(role, level, avg_score, grade, questions, answers, scores, feedbacks, strengths, weaknesses, can_crack)
+            _generate_voice_pdf(role, level, avg_score, grade, questions,
+                                answers, scores, feedbacks, strengths, weaknesses, can_crack)
     with restart_col:
         if st.button("🔄 New Interview", use_container_width=True, key="voice_restart_final"):
-            for k in ("voice_questions","voice_q_index","voice_answers","voice_scores",
-                      "voice_feedbacks","voice_done","voice_interview_active","voice_final_verdict"):
+            for k in ("voice_questions", "voice_q_index", "voice_answers", "voice_scores",
+                      "voice_feedbacks", "voice_done", "voice_interview_active", "voice_final_verdict"):
                 st.session_state.pop(k, None)
             st.rerun()
 
@@ -3366,9 +3491,11 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
                 f"Feedback: {fb.get('one_line_reaction','')}",
             ]
         if strengths:
-            lines += ["", "─" * 50, "STRENGTHS"] + [f"• {s}" for s in strengths]
+            lines += ["", "─" * 50, "STRENGTHS"] + \
+                [f"• {s}" for s in strengths]
         if weaknesses:
-            lines += ["", "─" * 50, "AREAS TO IMPROVE"] + [f"• {w}" for w in weaknesses]
+            lines += ["", "─" * 50, "AREAS TO IMPROVE"] + \
+                [f"• {w}" for w in weaknesses]
         lines += ["", "─" * 50, "Generated by JobLess AI"]
         txt = "\n".join(lines)
         import base64
@@ -3392,7 +3519,8 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
         pdf.set_font("Helvetica", "", 9)
         pdf.set_text_color(148, 163, 184)
         pdf.set_x(15)
-        pdf.cell(0, 6, f"Role: {role}  |  Level: {level}  |  Date: {__import__('datetime').datetime.now().strftime('%Y-%m-%d')}", ln=True)
+        pdf.cell(
+            0, 6, f"Role: {role}  |  Level: {level}  |  Date: {__import__('datetime').datetime.now().strftime('%Y-%m-%d')}", ln=True)
         pdf.set_y(48)
         # Score block
         pdf.set_fill_color(15, 23, 42)
@@ -3426,7 +3554,8 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
         for i, q in enumerate(questions):
             sc = scores.get(str(i), 0)
             fb = feedbacks.get(str(i), {})
-            if pdf.get_y() > 250: pdf.add_page()
+            if pdf.get_y() > 250:
+                pdf.add_page()
             pdf.set_fill_color(20, 28, 42)
             y0 = pdf.get_y()
             pdf.rect(15, y0, 180, 22, 'F')
@@ -3434,7 +3563,8 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
             pdf.set_font("Helvetica", "B", 8)
             pdf.set_xy(18, y0 + 3)
             q_txt = q.get('question', '')
-            pdf.cell(140, 5, (q_txt[:80] + "...") if len(q_txt) > 80 else q_txt)
+            pdf.cell(140, 5, (q_txt[:80] + "...")
+                     if len(q_txt) > 80 else q_txt)
             pdf.set_text_color(0, 210, 255)
             pdf.set_xy(160, y0 + 3)
             pdf.cell(30, 5, f"Score: {sc}/100")
@@ -3443,17 +3573,20 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
                 pdf.set_text_color(100, 116, 139)
                 pdf.set_font("Helvetica", "", 7)
                 pdf.set_xy(18, y0 + 10)
-                pdf.cell(172, 5, ("Answer: " + ans_txt[:100] + "...") if len(ans_txt) > 100 else "Answer: " + ans_txt)
-            fb_txt = fb.get("one_line_reaction","") or fb.get("verdict","")
+                pdf.cell(172, 5, ("Answer: " + ans_txt[:100] + "...") if len(
+                    ans_txt) > 100 else "Answer: " + ans_txt)
+            fb_txt = fb.get("one_line_reaction", "") or fb.get("verdict", "")
             if fb_txt:
                 pdf.set_text_color(71, 85, 105)
                 pdf.set_font("Helvetica", "", 6.5)
                 pdf.set_xy(18, y0 + 17)
-                pdf.cell(172, 4, (fb_txt[:110] + "...") if len(fb_txt) > 110 else fb_txt)
+                pdf.cell(172, 4, (fb_txt[:110] + "...")
+                         if len(fb_txt) > 110 else fb_txt)
             pdf.set_y(y0 + 25)
         # Strengths
         if strengths:
-            if pdf.get_y() > 240: pdf.add_page()
+            if pdf.get_y() > 240:
+                pdf.add_page()
             pdf.set_text_color(34, 197, 94)
             pdf.set_font("Helvetica", "B", 11)
             pdf.set_x(15)
@@ -3465,7 +3598,8 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
                 pdf.cell(0, 6, f"• {s}", ln=True)
         # Weaknesses
         if weaknesses:
-            if pdf.get_y() > 240: pdf.add_page()
+            if pdf.get_y() > 240:
+                pdf.add_page()
             pdf.set_text_color(239, 68, 68)
             pdf.set_font("Helvetica", "B", 11)
             pdf.set_x(15)
@@ -3481,7 +3615,8 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
         pdf.set_text_color(71, 85, 105)
         pdf.set_font("Helvetica", "", 7)
         pdf.set_xy(15, 286)
-        pdf.cell(0, 5, f"Generated by JobLess AI · {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        pdf.cell(
+            0, 5, f"Generated by JobLess AI · {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
         pdf_bytes = bytes(pdf.output())
         import base64
@@ -3540,9 +3675,11 @@ def render_tab_mock_interview(ai_handler: AIHandler, selected_model: str):
             vc1, vc2 = st.columns([3, 2])
             with vc1:
                 st.markdown('<div style="color:rgba(0,210,255,0.75);font-family:JetBrains Mono,monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;">🎯 Job Role</div>', unsafe_allow_html=True)
-                vr = st.selectbox("Voice Role", ALL_ROLES_VOICE, key="voice_mi_role_sel", label_visibility="collapsed")
+                vr = st.selectbox("Voice Role", ALL_ROLES_VOICE,
+                                  key="voice_mi_role_sel", label_visibility="collapsed")
                 if vr == "Others":
-                    vr = st.text_input("Custom role", placeholder="e.g. Prompt Engineer", key="voice_mi_role_custom")
+                    vr = st.text_input(
+                        "Custom role", placeholder="e.g. Prompt Engineer", key="voice_mi_role_custom")
                 st.session_state.voice_mi_role = vr
             with vc2:
                 st.markdown('<div style="color:rgba(0,210,255,0.75);font-family:JetBrains Mono,monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;">🪜 Level</div>', unsafe_allow_html=True)
@@ -3550,7 +3687,8 @@ def render_tab_mock_interview(ai_handler: AIHandler, selected_model: str):
                                   key="voice_mi_level_sel", label_visibility="collapsed")
                 st.session_state.voice_mi_level = vl
 
-            st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:8px'></div>",
+                        unsafe_allow_html=True)
             if st.button("🚀 Launch Voice Interview", use_container_width=True, type="primary", key="launch_voice"):
                 if not selected_model:
                     st.error("⚠️ Configure your API key in the sidebar first!")

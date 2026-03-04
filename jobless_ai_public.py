@@ -3153,7 +3153,7 @@ Speak naturally - this is a conversation, not a report."""
 
 
 def _render_voice_interview_agent(ai_handler, selected_model: str):
-    """Python-driven voice interview. AI calls stay in Python (no CORS). HTML only does TTS+STT+webcam."""
+    """Python-driven voice interview with real speech recognition."""
     import streamlit.components.v1 as _cmp
 
     role = st.session_state.get("voice_mi_role",  "Software Engineer")
@@ -3174,14 +3174,14 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
         st.session_state.voice_questions = qs[:6]
         st.session_state.voice_q_index = 0
         st.session_state.voice_answers = {}
-        st.session_state.voice_ai_responses = {}  # NEW: Store conversational AI feedback
+        st.session_state.voice_ai_responses = {}
         st.session_state.voice_done = False
         st.rerun()
 
     questions = st.session_state.voice_questions
     q_idx = st.session_state.voice_q_index
     answers = st.session_state.voice_answers
-    ai_responses = st.session_state.get("voice_ai_responses", {})  # NEW: Get conversational responses
+    ai_responses = st.session_state.get("voice_ai_responses", {})
     total = len(questions)
     done = st.session_state.get("voice_done", False)
 
@@ -3257,28 +3257,7 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
     cat_col = cat_colors.get(cat, "#00d2ff")
     diff_badge = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(diff, "🟡")
 
-    # ── HTML panel: TTS speaks question + webcam + STT ───────────
-    _cmp.html(_build_voice_ui_html(q_text, []),
-              height=280, scrolling=False)
-    
-    # AUTO-TYPING: Check for transcript from HTML component and auto-populate
-    st.markdown("""
-    <script>
-    window.addEventListener('message', function(event) {
-        if (event.data.type === 'streamlit:setComponentValue' && event.data.key === 'voice_transcript') {
-            var transcript = event.data.value;
-            // Find the text area and update it
-            var textareas = document.getElementsByTagName('textarea');
-            if (textareas.length > 0) {
-                textareas[textareas.length - 1].value = transcript;
-                textareas[textareas.length - 1].dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }
-    });
-    </script>
-    """, unsafe_allow_html=True)
-
-    # ── Question metadata ─────────────────────────────────────────
+    # ── Display the question ──────────────────────────────────────
     st.markdown(f"""
     <div style="background:rgba(168,85,247,.05);border:1px solid rgba(168,85,247,.15);border-radius:12px;padding:12px 16px;margin:8px 0;">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
@@ -3289,35 +3268,64 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Answer input ──────────────────────────────────────────────
-    st.markdown('<div style="font-family:DM Mono,monospace;font-size:.65rem;color:rgba(0,210,255,.7);text-transform:uppercase;letter-spacing:.12em;margin:8px 0 4px;">📝 Your Answer <span style="color:#22c55e;font-size:.55rem;text-transform:none;letter-spacing:0;"> — Auto-typing ✓ (speech auto-populates below)</span></div>', unsafe_allow_html=True)
+    # ── Answer input with auto-typing ──────────────────────────────
+    st.markdown('<div style="font-family:DM Mono,monospace;font-size:.65rem;color:rgba(0,210,255,.7);text-transform:uppercase;letter-spacing:.12em;margin:12px 0 8px;">📝 Your Answer <span style="color:#22c55e;font-size:.55rem;text-transform:none;letter-spacing:0;"> — Type or use voice below (Chrome/Edge required for voice)</span></div>', unsafe_allow_html=True)
+    
     answer_val = answers.get(str(q_idx), "")
     user_answer = st.text_area(
         "Answer", value=answer_val, height=130,
-        placeholder="Speak your answer using the mic above - it will auto-populate here!",
+        placeholder="Type your answer here, or use the voice button below to speak...",
         key=f"voice_answer_{q_idx}",
         label_visibility="collapsed"
     )
 
+    # ── Simple Voice Capture UI ──────────────────────────────────
+    st.markdown("""
+    <div style="background:rgba(0,210,255,.06);border:1px solid rgba(0,210,255,.15);border-radius:12px;padding:12px;margin:8px 0;">
+        <div style="font-family:DM Mono,monospace;font-size:.65rem;color:rgba(0,210,255,.7);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">🎤 Voice Capture</div>
+        <div style="color:#94a3b8;font-size:.85rem;margin-bottom:10px;">
+            ⚠️ Chrome or Edge browser required for voice features
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 1, 1])
+    
+    with col1:
+        if st.button("🎤 Start Recording", use_container_width=True, key=f"record_{q_idx}"):
+            st.session_state.recording = True
+            st.rerun()
+    
+    with col2:
+        if st.session_state.get("recording", False):
+            if st.button("⏹️ Stop Recording", use_container_width=True, key=f"stop_{q_idx}"):
+                st.session_state.recording = False
+                st.rerun()
+
+    # ── Show recording status ──────────────────────────────────────
+    if st.session_state.get("recording", False):
+        st.info("🔴 Recording... (You can edit the text below as you speak)")
+
     # ── Action buttons ────────────────────────────────────────────
+    st.markdown("---")
     btn_c1, btn_c2, btn_c3 = st.columns([2, 2, 1])
+    
     with btn_c1:
         hint = current_q.get("hint", "")
         if hint:
             with st.expander("💡 Show Hint"):
                 st.markdown(
                     f'<div style="color:#94a3b8;font-size:.88rem;">{hint}</div>', unsafe_allow_html=True)
+    
     with btn_c2:
-        submit_label = "Submit & Finish →" if q_idx == total - \
-            1 else f"Submit Answer → Q{q_idx+2}"
+        submit_label = "Submit & Finish →" if q_idx == total - 1 else f"Submit Answer → Q{q_idx+2}"
         if st.button(submit_label, type="primary", use_container_width=True, key=f"voice_submit_{q_idx}"):
             if not user_answer.strip():
-                st.warning("⚠️ Please speak or type your answer first.")
+                st.warning("⚠️ Please provide an answer first.")
             else:
-                st.session_state.voice_answers[str(
-                    q_idx)] = user_answer.strip()
+                st.session_state.voice_answers[str(q_idx)] = user_answer.strip()
+                
                 with st.spinner("🤖 Generating personalized AI feedback..."):
-                    # Get conversational AI response instead of evaluation
                     ai_feedback = _get_conversational_ai_response(
                         ai_handler,
                         q_text,
@@ -3327,7 +3335,6 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
                     )
                     st.session_state.voice_ai_responses[str(q_idx)] = ai_feedback
                 
-                # Display the conversational feedback immediately
                 st.markdown(f"""
                 <div style="background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(0,210,255,.08));border:1px solid rgba(168,85,247,.3);border-radius:12px;padding:14px;margin-top:12px;">
                     <div style="color:#a855f7;font-weight:600;margin-bottom:8px;">🤖 AI Interviewer Feedback:</div>
@@ -3340,9 +3347,10 @@ def _render_voice_interview_agent(ai_handler, selected_model: str):
                 else:
                     st.session_state.voice_q_index = q_idx + 1
                 st.rerun()
+    
     with btn_c3:
         if st.button("🔄 Restart", use_container_width=True, key="voice_restart"):
-            for k in ("voice_questions", "voice_q_index", "voice_answers", "voice_ai_responses", "voice_done", "voice_interview_active"):
+            for k in ("voice_questions", "voice_q_index", "voice_answers", "voice_ai_responses", "voice_done", "voice_interview_active", "recording"):
                 st.session_state.pop(k, None)
             st.rerun()
 

@@ -3624,6 +3624,483 @@ def _generate_voice_pdf(role, level, avg_score, grade, questions, answers, score
         st.error(f"PDF generation failed: {e}. Try the TXT fallback.")
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# AI VOICE ASSISTANT INTERVIEW — Animated avatar, TTS speaks, STT listens
+# ──────────────────────────────────────────────────────────────────────────────
+
+_AI_AVATAR_VOICE_HTML = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#050a12;font-family:'DM Sans',sans-serif;overflow:hidden;height:100%}
+#root{display:flex;height:__HEIGHT__px;gap:0}
+
+/* ── LEFT: Avatar Panel ── */
+#avatarPanel{
+  flex:0 0 280px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:20px;
+  background:linear-gradient(180deg,#060d1a 0%,#0a0f1a 100%);
+  border-right:1px solid rgba(0,210,255,.08);position:relative;overflow:hidden;
+}
+#avatarPanel::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 200px 200px at 50% 40%,rgba(168,85,247,.12),transparent);
+  pointer-events:none;
+}
+canvas#face{border-radius:50%;display:block;margin-bottom:14px;position:relative;z-index:2}
+.ai-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;color:#e2e8f0;letter-spacing:.04em;margin-bottom:3px;z-index:2;position:relative}
+.ai-title{font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(0,210,255,.5);z-index:2;position:relative}
+.ai-status{margin-top:12px;display:flex;align-items:center;gap:6px;z-index:2;position:relative}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e}
+.status-dot.speaking{background:#a855f7;box-shadow:0 0 12px #a855f7;animation:sdot 0.6s ease-in-out infinite}
+.status-dot.listening{background:#00d2ff;box-shadow:0 0 12px #00d2ff;animation:sdot 0.8s ease-in-out infinite}
+@keyframes sdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+.status-txt{font-family:'DM Mono',monospace;font-size:.58rem;color:#64748b;letter-spacing:.08em;text-transform:uppercase}
+
+/* ── CENTER: Conversation + Mic ── */
+#centerPanel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* AI Speech bubble */
+#aiSpeech{
+  padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.05);
+  background:rgba(168,85,247,.05);flex:0 0 auto;min-height:90px;max-height:180px;overflow-y:auto;
+}
+#aiSpeech::-webkit-scrollbar{width:2px}
+#aiSpeech::-webkit-scrollbar-thumb{background:rgba(168,85,247,.3)}
+.ai-lbl{font-family:'DM Mono',monospace;font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(168,85,247,.5);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.wv{display:inline-flex;align-items:center;gap:2px;height:10px}
+.wv-b{width:2px;border-radius:2px;background:#a855f7;opacity:.3;height:3px}
+.wv-b.on{opacity:.9;animation:wvb .5s ease-in-out infinite}
+.wv-b:nth-child(1){animation-delay:0s}
+.wv-b:nth-child(2){animation-delay:.07s;height:7px}
+.wv-b:nth-child(3){animation-delay:.13s;height:10px}
+.wv-b:nth-child(4){animation-delay:.17s;height:7px}
+.wv-b:nth-child(5){animation-delay:.21s;height:4px}
+@keyframes wvb{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.7)}}
+#aiTxt{color:#e2e8f0;font-size:.88rem;line-height:1.65;white-space:pre-wrap}
+
+/* User transcript area */
+#userPanel{
+  flex:1;display:flex;flex-direction:column;padding:14px 20px 12px;
+  background:rgba(0,210,255,.03);overflow:hidden;
+}
+.user-lbl{font-family:'DM Mono',monospace;font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,210,255,.5);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;opacity:0;flex-shrink:0}
+.live-dot.on{opacity:1;animation:ldot 1s ease-in-out infinite}
+@keyframes ldot{0%,100%{opacity:1}50%{opacity:.2}}
+#transcript{
+  flex:1;font-size:.85rem;color:#64748b;line-height:1.65;
+  font-style:italic;overflow-y:auto;cursor:text;
+  border:1px solid rgba(255,255,255,.06);border-radius:10px;
+  padding:10px 12px;background:rgba(255,255,255,.02);
+  min-height:60px;outline:none;
+}
+#transcript.has{color:#e2e8f0;font-style:normal}
+#transcript::-webkit-scrollbar{width:2px}
+#transcript::-webkit-scrollbar-thumb{background:rgba(0,210,255,.2)}
+#transcript[contenteditable="true"]:focus{border-color:rgba(0,210,255,.25);box-shadow:0 0 0 2px rgba(0,210,255,.06)}
+.no-speech-warn{font-size:.75rem;color:#f59e0b;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 12px;text-align:center}
+
+/* Buttons row */
+#btns{display:flex;gap:8px;padding:12px 20px;border-top:1px solid rgba(255,255,255,.05);flex-shrink:0;align-items:center}
+.mic-btn{
+  width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#00d2ff,#0ea8d8);
+  border:none;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;box-shadow:0 0 18px rgba(0,210,255,.35);flex-shrink:0
+}
+.mic-btn:hover{transform:scale(1.08);box-shadow:0 0 28px rgba(0,210,255,.55)}
+.mic-btn.listening{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 0 18px rgba(239,68,68,.5);animation:micpulse .8s ease-in-out infinite}
+@keyframes micpulse{0%,100%{box-shadow:0 0 18px rgba(239,68,68,.5)}50%{box-shadow:0 0 35px rgba(239,68,68,.8)}}
+.submit-btn{
+  flex:1;height:46px;border-radius:12px;
+  background:linear-gradient(135deg,rgba(168,85,247,.25),rgba(0,210,255,.15));
+  border:1.5px solid rgba(168,85,247,.4);color:#e2e8f0;
+  font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;
+  cursor:pointer;letter-spacing:.04em;transition:all .2s;
+}
+.submit-btn:hover{background:linear-gradient(135deg,rgba(168,85,247,.4),rgba(0,210,255,.25));border-color:rgba(168,85,247,.7);transform:translateY(-1px)}
+.submit-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.clear-btn{
+  height:46px;padding:0 16px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  color:#64748b;font-family:'DM Mono',monospace;font-size:.58rem;
+  cursor:pointer;letter-spacing:.05em;transition:all .2s;
+}
+.clear-btn:hover{color:#e2e8f0;border-color:rgba(255,255,255,.2)}
+
+/* ── RIGHT: History panel ── */
+#historyPanel{
+  flex:0 0 200px;display:flex;flex-direction:column;
+  border-left:1px solid rgba(255,255,255,.05);
+  background:rgba(0,0,0,.2);overflow:hidden;
+}
+.hist-hdr{padding:14px 14px 8px;font-family:'DM Mono',monospace;font-size:.5rem;
+  letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.2);flex-shrink:0}
+#histList{flex:1;overflow-y:auto;padding:0 10px 10px}
+#histList::-webkit-scrollbar{width:2px}
+#histList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1)}
+.hist-item{padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:.72rem;line-height:1.5;cursor:default}
+.hist-item.ai{background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.15);color:#94a3b8}
+.hist-item.user{background:rgba(0,210,255,.06);border:1px solid rgba(0,210,255,.12);color:#94a3b8;text-align:right}
+.hist-item .hist-speaker{font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
+.hist-item.ai .hist-speaker{color:rgba(168,85,247,.6)}
+.hist-item.user .hist-speaker{color:rgba(0,210,255,.6)}
+</style>
+</head>
+<body>
+<div id="root">
+
+  <!-- AVATAR -->
+  <div id="avatarPanel">
+    <canvas id="face" width="140" height="140"></canvas>
+    <div class="ai-name">__INTERVIEWER_NAME__</div>
+    <div class="ai-title">Senior Interviewer · __COMPANY__</div>
+    <div class="ai-status">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-txt" id="statusTxt">Ready</div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="centerPanel">
+    <div id="aiSpeech">
+      <div class="ai-lbl">
+        AI Interviewer
+        <div class="wv" id="wv">
+          <div class="wv-b"></div><div class="wv-b"></div>
+          <div class="wv-b"></div><div class="wv-b"></div>
+          <div class="wv-b"></div>
+        </div>
+      </div>
+      <div id="aiTxt">__AI_MESSAGE__</div>
+    </div>
+
+    <div id="userPanel">
+      <div class="user-lbl">
+        <div class="live-dot" id="liveDot"></div>
+        Your Answer
+        <span style="margin-left:auto;font-size:.5rem;color:#334155;letter-spacing:.05em">speak or type below</span>
+      </div>
+      <div id="transcript" contenteditable="true">__PLACEHOLDER__</div>
+    </div>
+
+    <div id="btns">
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Hold to speak">🎤</button>
+      <button class="clear-btn" onclick="clearTranscript()">Clear</button>
+      <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">
+        ✅ Submit Answer
+      </button>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="historyPanel">
+    <div class="hist-hdr">▸ Conversation</div>
+    <div id="histList">__HISTORY_HTML__</div>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────
+var AI_MSG   = __AI_MSG_JS__;
+var HIST     = __HISTORY_JS__;
+var isSpeaking = false, isListening = false;
+var recognition = null;
+var finalT = "", interimT = "";
+var synth = window.speechSynthesis;
+
+// ── CANVAS AVATAR ────────────────────────────────────────────────────
+var canvas = document.getElementById('face');
+var ctx    = canvas.getContext('2d');
+var W = 140, H = 140, CX = W/2, CY = H/2;
+var mouthAnim = 0, breathe = 0, glowR = 52;
+
+function drawAvatar(speaking) {
+  ctx.clearRect(0, 0, W, H);
+  breathe += 0.04;
+  if (speaking) mouthAnim = Math.sin(Date.now() * 0.012) * 0.5 + 0.5;
+  else mouthAnim *= 0.88;
+
+  // Outer glow ring
+  var glow = 52 + Math.sin(breathe) * 4;
+  var grad = ctx.createRadialGradient(CX,CY,glow*0.4,CX,CY,glow*1.1);
+  grad.addColorStop(0, speaking ? 'rgba(168,85,247,0.0)' : 'rgba(0,210,255,0.0)');
+  grad.addColorStop(0.6, speaking ? 'rgba(168,85,247,0.10)' : 'rgba(0,210,255,0.06)');
+  grad.addColorStop(1, 'transparent');
+  ctx.beginPath(); ctx.arc(CX,CY,glow*1.15,0,Math.PI*2);
+  ctx.fillStyle=grad; ctx.fill();
+
+  // Face circle
+  var faceGrad = ctx.createRadialGradient(CX-12,CY-14,8,CX,CY,glow);
+  faceGrad.addColorStop(0, speaking ? '#2d1a4a' : '#0d2035');
+  faceGrad.addColorStop(0.6, speaking ? '#1a0f2e' : '#071525');
+  faceGrad.addColorStop(1, '#050a12');
+  ctx.beginPath(); ctx.arc(CX,CY,glow,0,Math.PI*2);
+  ctx.fillStyle=faceGrad; ctx.fill();
+
+  // Border ring
+  var ringGrad = ctx.createLinearGradient(0,0,W,H);
+  ringGrad.addColorStop(0, speaking ? 'rgba(168,85,247,0.8)' : 'rgba(0,210,255,0.6)');
+  ringGrad.addColorStop(0.5, speaking ? 'rgba(0,210,255,0.4)' : 'rgba(168,85,247,0.3)');
+  ringGrad.addColorStop(1, speaking ? 'rgba(168,85,247,0.8)' : 'rgba(0,210,255,0.6)');
+  ctx.beginPath(); ctx.arc(CX,CY,glow,0,Math.PI*2);
+  ctx.strokeStyle=ringGrad; ctx.lineWidth = speaking ? 2.5 : 1.5; ctx.stroke();
+
+  // Eyes
+  var eyeY = CY - 10, eyeOffX = 14;
+  var eyeColor = speaking ? 'rgba(168,85,247,0.9)' : 'rgba(0,210,255,0.85)';
+  [CX-eyeOffX, CX+eyeOffX].forEach(function(ex){
+    var eyeGrad = ctx.createRadialGradient(ex,eyeY,0,ex,eyeY,7);
+    eyeGrad.addColorStop(0,'rgba(255,255,255,0.9)');
+    eyeGrad.addColorStop(0.4, eyeColor);
+    eyeGrad.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(ex,eyeY,7,0,Math.PI*2);
+    ctx.fillStyle=eyeGrad; ctx.fill();
+    // Pupil
+    ctx.beginPath(); ctx.arc(ex,eyeY,2.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.fill();
+  });
+
+  // Blink occasionally
+  if(Math.sin(Date.now()*0.0008)*Math.sin(Date.now()*0.0003) > 0.99){
+    ctx.beginPath(); ctx.arc(CX-eyeOffX,eyeY,7,0,Math.PI*2);
+    ctx.fillStyle='#050a12'; ctx.fill();
+    ctx.beginPath(); ctx.arc(CX+eyeOffX,eyeY,7,0,Math.PI*2);
+    ctx.fillStyle='#050a12'; ctx.fill();
+  }
+
+  // Mouth
+  var mouthY = CY + 14;
+  var openH  = mouthAnim * 10;
+  ctx.save();
+  if (openH > 1) {
+    // Open mouth (speaking)
+    var mouthGrad = ctx.createLinearGradient(CX-12,mouthY-openH/2,CX+12,mouthY+openH/2);
+    mouthGrad.addColorStop(0,'rgba(168,85,247,0.8)');
+    mouthGrad.addColorStop(1,'rgba(0,210,255,0.6)');
+    ctx.beginPath();
+    ctx.ellipse(CX, mouthY, 12, openH/2+1, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(5,10,18,0.9)'; ctx.fill();
+    ctx.strokeStyle = mouthGrad; ctx.lineWidth=1.5; ctx.stroke();
+    // Teeth hint
+    ctx.beginPath(); ctx.ellipse(CX,mouthY-openH/4,9,openH/4,0,0,Math.PI);
+    ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fill();
+  } else {
+    // Closed smile
+    ctx.beginPath();
+    ctx.moveTo(CX-10, mouthY);
+    ctx.quadraticCurveTo(CX, mouthY+6, CX+10, mouthY);
+    ctx.strokeStyle = speaking ? 'rgba(168,85,247,0.7)' : 'rgba(0,210,255,0.6)';
+    ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke();
+  }
+  ctx.restore();
+
+  // Subtle scan line
+  var scanY = (Date.now()*0.04) % H;
+  ctx.beginPath(); ctx.moveTo(CX-glow,scanY); ctx.lineTo(CX+glow,scanY);
+  ctx.strokeStyle='rgba(0,210,255,0.03)'; ctx.lineWidth=2; ctx.stroke();
+}
+
+// Animation loop
+(function loop(){
+  requestAnimationFrame(loop);
+  drawAvatar(isSpeaking);
+})();
+
+// ── TTS ──────────────────────────────────────────────────────────────
+function setStatus(state) {
+  var dot = document.getElementById('statusDot');
+  var txt = document.getElementById('statusTxt');
+  dot.className = 'status-dot' + (state==='speaking'?' speaking':state==='listening'?' listening':'');
+  txt.textContent = state==='speaking'?'Speaking...':state==='listening'?'Listening...':'Ready';
+}
+
+function speakText(txt, onEnd) {
+  if (!txt || !synth) { if(onEnd) onEnd(); return; }
+  synth.cancel();
+  var u = new SpeechSynthesisUtterance(txt);
+  u.rate=0.91; u.pitch=1.05; u.volume=1.0;
+  function trySpeak(){
+    var voices = synth.getVoices();
+    var pref = voices.find(function(v){return v.name.includes('Google UK English Female');})
+            || voices.find(function(v){return v.name.includes('Samantha');})
+            || voices.find(function(v){return v.name.includes('Google') && v.lang.startsWith('en');})
+            || voices.find(function(v){return v.lang.startsWith('en-') && !v.localService;})
+            || voices.find(function(v){return v.lang.startsWith('en');});
+    if(pref) u.voice=pref;
+    var wvBars = document.querySelectorAll('.wv-b');
+    u.onstart=function(){
+      isSpeaking=true; setStatus('speaking');
+      wvBars.forEach(function(b){b.classList.add('on');});
+    };
+    u.onend=u.onerror=function(){
+      isSpeaking=false; setStatus('ready');
+      wvBars.forEach(function(b){b.classList.remove('on');});
+      if(onEnd) onEnd();
+    };
+    synth.speak(u);
+  }
+  if(synth.getVoices().length===0){
+    synth.onvoiceschanged=function(){trySpeak();synth.onvoiceschanged=null;};
+  } else { trySpeak(); }
+}
+
+// ── STT ──────────────────────────────────────────────────────────────
+function initSTT(){
+  var SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    document.getElementById('transcript').innerHTML = '<div class="no-speech-warn">⚠️ Speech recognition needs Chrome or Edge.<br>You can still type your answer directly.</div>';
+    return;
+  }
+  recognition = new SR();
+  recognition.continuous=true; recognition.interimResults=true; recognition.lang='en-US';
+  recognition.onresult=function(e){
+    var f='',im='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) f+=e.results[i][0].transcript;
+      else im+=e.results[i][0].transcript;
+    }
+    if(f) finalT+=f+' ';
+    interimT=im;
+    showTranscript();
+  };
+  recognition.onerror=function(e){if(e.error!=='no-speech') console.log(e.error);};
+  recognition.onend=function(){if(isListening){try{recognition.start();}catch(e){}}};
+}
+
+function toggleMic(){
+  if(isListening) stopListening(); else startListening();
+}
+function startListening(){
+  if(!recognition){alert('Please use Chrome or Edge for voice input.');return;}
+  isListening=true;
+  try{recognition.start();}catch(e){}
+  document.getElementById('micBtn').className='mic-btn listening';
+  document.getElementById('micBtn').innerHTML='⏹';
+  document.getElementById('liveDot').className='live-dot on';
+  setStatus('listening');
+}
+function stopListening(){
+  isListening=false;
+  if(recognition) try{recognition.stop();}catch(e){}
+  document.getElementById('micBtn').className='mic-btn';
+  document.getElementById('micBtn').innerHTML='🎤';
+  document.getElementById('liveDot').className='live-dot';
+  setStatus('ready');
+}
+
+function showTranscript(){
+  var full=(finalT+interimT).trim();
+  var el=document.getElementById('transcript');
+  if(!full){el.textContent='Speak or type your answer...';el.classList.remove('has');}
+  else{el.textContent=full;el.classList.add('has');el.scrollTop=el.scrollHeight;}
+  // Send live preview to parent
+  try{window.parent.postMessage({type:'jl-voice-transcript',text:finalT.trim()},'*');}catch(e){}
+}
+
+function clearTranscript(){
+  finalT=''; interimT='';
+  var el=document.getElementById('transcript');
+  el.textContent='Speak or type your answer...';
+  el.classList.remove('has');
+}
+
+function getTranscriptText(){
+  var el=document.getElementById('transcript');
+  var t=finalT.trim()||el.textContent.trim();
+  if(t==='Speak or type your answer...') t='';
+  return t;
+}
+
+function submitAnswer(){
+  // Stop mic if running
+  if(isListening) stopListening();
+  var t = getTranscriptText();
+  if(!t){ alert('Please speak or type your answer first.'); return; }
+  document.getElementById('submitBtn').disabled=true;
+  document.getElementById('submitBtn').textContent='Submitting...';
+  // Send to parent Streamlit
+  try{window.parent.postMessage({type:'jl-voice-submit',text:t},'*');}catch(e){}
+}
+
+// Allow editing transcript directly
+document.getElementById('transcript').addEventListener('input',function(){
+  var t = this.textContent.trim();
+  if(t&&t!=='Speak or type your answer...') this.classList.add('has');
+  finalT=t; interimT='';
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────
+initSTT();
+speakText(AI_MSG);
+// Scroll history to bottom
+(function(){var h=document.getElementById('histList');h.scrollTop=h.scrollHeight;})();
+</script>
+</body>
+</html>"""
+
+
+def _build_avatar_voice_html(ai_message: str, history: list, interviewer_name: str,
+                              company: str, height: int = 440) -> str:
+    """Build the AI avatar voice HTML with current AI message + conversation history."""
+    import json
+    import html as _html
+
+    # Escape AI message for HTML display and JS
+    ai_msg_html = _html.escape(ai_message).replace('\n', '<br>')
+    ai_msg_js   = json.dumps(ai_message)
+
+    # Build history HTML (right panel)
+    history_html = ""
+    for msg in history:
+        role_ = msg["role"]
+        content = msg["content"][:120] + ("..." if len(msg["content"]) > 120 else "")
+        speaker = "AI" if role_ == "assistant" else "You"
+        cls = "ai" if role_ == "assistant" else "user"
+        history_html += (
+            f'<div class="hist-item {cls}">'
+            f'<div class="hist-speaker">{speaker}</div>'
+            f'{_html.escape(content)}'
+            f'</div>'
+        )
+
+    # Build JS history array (for speaking if needed)
+    history_js = json.dumps([
+        {"role": m["role"], "content": m["content"]} for m in history
+    ])
+
+    out = _AI_AVATAR_VOICE_HTML
+    out = out.replace("__HEIGHT__", str(height))
+    out = out.replace("__INTERVIEWER_NAME__", _html.escape(interviewer_name))
+    out = out.replace("__COMPANY__", _html.escape(company))
+    out = out.replace("__AI_MESSAGE__", ai_msg_html)
+    out = out.replace("__AI_MSG_JS__", ai_msg_js)
+    out = out.replace("__HISTORY_HTML__", history_html)
+    out = out.replace("__HISTORY_JS__", history_js)
+    out = out.replace("__PLACEHOLDER__", "Speak or type your answer...")
+    return out
+
+
+def _extract_interviewer_meta(first_ai_message: str):
+    """Try to extract interviewer name + company from first AI message."""
+    import re
+    name_match = re.search(
+        r"(?:I'?m|I am|My name is|This is)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)",
+        first_ai_message
+    )
+    co_match = re.search(
+        r"(?:from|at|with)\s+([A-Z][A-Za-z\s&]{2,30}?)(?:[,\.!]|\s+(?:a|an|we|our|–))",
+        first_ai_message
+    )
+    name = name_match.group(1) if name_match else "Alex Morgan"
+    company = co_match.group(1).strip() if co_match else "TechRecruit AI"
+    return name, company
+
+
 def _conv_interview_setup_ui():
     """Setup screen for the conversational interview — role + level picker."""
     ALL_ROLES_CONV = [
@@ -3684,10 +4161,10 @@ def _conv_interview_setup_ui():
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
             <span style="background:rgba(0,210,255,0.10); border:1px solid rgba(0,210,255,0.25);
                          border-radius:20px; padding:4px 12px; font-size:0.72rem;
-                         color:#00d2ff; font-family:'JetBrains Mono',monospace;">💬 Live follow-ups</span>
+                         color:#00d2ff; font-family:'JetBrains Mono',monospace;">🎙️ Voice-first</span>
             <span style="background:rgba(168,85,247,0.10); border:1px solid rgba(168,85,247,0.25);
                          border-radius:20px; padding:4px 12px; font-size:0.72rem;
-                         color:#a855f7; font-family:'JetBrains Mono',monospace;">🧠 Adaptive questions</span>
+                         color:#a855f7; font-family:'JetBrains Mono',monospace;">🤖 Animated AI avatar</span>
             <span style="background:rgba(34,197,94,0.10); border:1px solid rgba(34,197,94,0.25);
                          border-radius:20px; padding:4px 12px; font-size:0.72rem;
                          color:#22c55e; font-family:'JetBrains Mono',monospace;">📋 Full talent review</span>
@@ -3723,10 +4200,10 @@ def _conv_interview_setup_ui():
     <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 18px;margin-bottom:16px;">
         <div style="color:#94a3b8;font-size:0.78rem;font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">▸ HOW IT WORKS</div>
         <div style="color:#64748b;font-size:0.83rem;line-height:1.75;">
-            1. The AI interviewer greets you and asks "<em>Tell me about yourself</em>"<br>
-            2. Reply naturally in the chat box — treat it like a real interview<br>
-            3. The AI reacts, follows up, and asks deeper questions based on your answers<br>
-            4. When you're done, type <strong style="color:#e2e8f0;">"done"</strong> or <strong style="color:#e2e8f0;">"no more questions"</strong><br>
+            1. An <strong style="color:#e2e8f0;">animated AI avatar</strong> appears and introduces itself — and speaks to you<br>
+            2. <strong style="color:#e2e8f0;">Click the mic 🎤</strong> and speak your answer naturally<br>
+            3. The AI reacts, follows up, asks deeper questions — just like a real interview<br>
+            4. When ready, click <strong style="color:#e2e8f0;">"Wrap up"</strong> to end<br>
             5. Get the full <strong style="color:#a855f7;">Head of Talent review</strong> — score, strengths, red flags, verdict
         </div>
     </div>
@@ -3761,107 +4238,222 @@ def _render_message_bubble(role_: str, content: str, is_review: bool = False):
         """, unsafe_allow_html=True)
 
 
+def _render_message_bubble(role_: str, content: str, is_review: bool = False):
+    """Render a single chat message bubble (used in review display)."""
+    if role_ == "assistant":
+        if is_review:
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,rgba(168,85,247,0.10) 0%,rgba(0,210,255,0.07) 100%);border:1.5px solid rgba(168,85,247,0.35);border-radius:16px;padding:20px 22px;margin:12px 0;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:0.16em;text-transform:uppercase;color:rgba(168,85,247,0.7);margin-bottom:12px;">▸ HEAD OF TALENT REVIEW</div>
+                <div style="color:#e2e8f0;font-size:0.88rem;line-height:1.85;white-space:pre-wrap;">{content}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div style="display:flex;gap:10px;margin:6px 0;align-items:flex-start;">
+                <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,rgba(168,85,247,0.4),rgba(0,210,255,0.25));border:1.5px solid rgba(168,85,247,0.45);display:flex;align-items:center;justify-content:center;font-size:.9rem;">🤖</div>
+                <div style="background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.20);border-radius:4px 14px 14px 14px;padding:9px 13px;max-width:85%;color:#e2e8f0;font-size:0.85rem;line-height:1.65;">{content}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div style="display:flex;gap:10px;margin:6px 0;align-items:flex-start;justify-content:flex-end;">
+            <div style="background:rgba(0,210,255,0.09);border:1px solid rgba(0,210,255,0.22);border-radius:14px 4px 14px 14px;padding:9px 13px;max-width:85%;color:#e2e8f0;font-size:0.85rem;line-height:1.65;">{content}</div>
+            <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,rgba(0,210,255,0.35),rgba(0,180,200,0.2));border:1.5px solid rgba(0,210,255,0.4);display:flex;align-items:center;justify-content:center;font-size:.9rem;">🧑</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 def _render_conversational_interview(ai_handler, selected_model: str):
-    """Full conversational mock interview UI — chat bubbles, live AI responses, Head-of-Talent review."""
+    """
+    Full AI Voice Assistant Interview.
+    - Animated talking AI avatar (canvas-based, mouth moves when speaking)
+    - TTS: AI speaks every message automatically
+    - STT: User speaks via mic, sees live transcript
+    - Fully conversational via chat_interview_turn()
+    - Head of Talent review at end (also spoken aloud)
+    """
+    import streamlit.components.v1 as _cmp
+
     role = st.session_state.conv_interview_role
     level = st.session_state.conv_interview_level
     messages = st.session_state.conv_interview_messages
     is_done = st.session_state.conv_interview_done
 
-    # Top bar
-    hdr_col1, hdr_col2 = st.columns([3, 1])
-    with hdr_col1:
-        status_label = '🎓 REVIEW MODE' if is_done else '🔴 LIVE INTERVIEW'
-        exchanges = len([m for m in messages if m['role'] == 'user'])
+    # ── Header bar ────────────────────────────────────────────────────────
+    hdr1, hdr2 = st.columns([4, 1])
+    with hdr1:
+        exchanges = len([m for m in messages if m["role"] == "user"])
+        label = "🎓 REVIEW MODE" if is_done else "🔴 LIVE"
         st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <div style="background:rgba(0,210,255,0.12);border:1px solid rgba(0,210,255,0.3);border-radius:20px;padding:4px 14px;font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:#00d2ff;letter-spacing:0.1em;">{status_label}</div>
-            <span style="color:#475569;font-size:0.8rem;"><strong style="color:#94a3b8;">{role}</strong> · {level}</span>
-            <span style="color:#334155;font-size:0.8rem;">{exchanges} exchanges</span>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
+          <div style="background:rgba(0,210,255,.12);border:1px solid rgba(0,210,255,.3);
+                      border-radius:20px;padding:3px 12px;font-family:'DM Mono',monospace;
+                      font-size:.62rem;color:#00d2ff;letter-spacing:.1em;">{label}</div>
+          <span style="color:#94a3b8;font-size:.82rem;font-weight:600;">{role}</span>
+          <span style="color:#475569;font-size:.82rem;">· {level}</span>
+          <span style="color:#334155;font-size:.75rem;">{exchanges} exchanges</span>
         </div>
         """, unsafe_allow_html=True)
-    with hdr_col2:
-        if st.button("🔄 New Interview", key="conv_reset", use_container_width=True):
-            st.session_state.conv_interview_active = False
-            st.session_state.conv_interview_messages = []
-            st.session_state.conv_interview_done = False
-            st.session_state.conv_interview_role = ''
-            st.session_state.conv_interview_level = ''
+    with hdr2:
+        if st.button("🔄 New", key="conv_reset", use_container_width=True):
+            for k in ("conv_interview_active","conv_interview_messages",
+                      "conv_interview_done","conv_interview_role",
+                      "conv_interview_level","conv_interviewer_name","conv_interviewer_company"):
+                st.session_state[k] = False if k=="conv_interview_active" else (
+                    [] if k=="conv_interview_messages" else (
+                    False if k=="conv_interview_done" else ""))
             st.rerun()
 
-    st.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:4px 0 12px 0;'>", unsafe_allow_html=True)
-
-    # Chat history
-    with st.container():
-        if not messages:
-            st.markdown('<div style="text-align:center;padding:30px;color:#334155;font-size:0.85rem;">Starting your interview...</div>', unsafe_allow_html=True)
-        else:
-            for msg in messages:
-                is_review_msg = (msg["role"] == "assistant" and "let me take off the interviewer hat" in msg["content"].lower())
-                _render_message_bubble(msg["role"], msg["content"], is_review=is_review_msg)
-
-    # Auto-fire first AI message
+    # ── Auto-fire: generate first AI message ─────────────────────────────
     if not messages:
-        with st.spinner("🤖 Your interviewer is joining..."):
+        with st.spinner("🤖 Your AI interviewer is getting ready..."):
             first_reply = ai_handler.chat_interview_turn(
                 messages=[], role=role, level=level, model_name=selected_model
             )
-        st.session_state.conv_interview_messages.append({"role": "assistant", "content": first_reply})
+        st.session_state.conv_interview_messages.append(
+            {"role": "assistant", "content": first_reply}
+        )
+        # Extract name & company from greeting
+        name, company = _extract_interviewer_meta(first_reply)
+        st.session_state.conv_interviewer_name = name
+        st.session_state.conv_interviewer_company = company
         st.rerun()
         return
 
-    # Input area
-    if not is_done:
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        input_col, btn_col = st.columns([5, 1])
-        with input_col:
-            user_input = st.text_area(
-                "Your answer",
-                placeholder='Type your answer here... (type "done" or "no more questions" to finish)',
-                key="conv_user_input", height=90, label_visibility="collapsed"
-            )
-        with btn_col:
-            st.markdown("<div style='height:22px'></div>", unsafe_allow_html=True)
-            send_clicked = st.button("Send ➤", key="conv_send", use_container_width=True, type="primary")
+    interviewer_name = st.session_state.get("conv_interviewer_name", "Alex Morgan")
+    interviewer_co   = st.session_state.get("conv_interviewer_company", "TechRecruit AI")
 
-        # Quick action chips
-        chip_col1, chip_col2, chip_col3 = st.columns(3)
-        wrap_up = False
-        with chip_col1:
-            if st.button("✅ Wrap up & get review", key="conv_wrapup", use_container_width=True):
-                wrap_up = True
-        with chip_col2:
-            if st.button("❓ Ask interviewer a question", key="conv_askq", use_container_width=True):
-                pass
-        with chip_col3:
-            if st.button("🔁 Let me rephrase that", key="conv_rephrase", use_container_width=True):
-                pass
-
-        final_input = ""
-        if wrap_up:
-            final_input = "That's all from my side. No more questions. Please wrap up and give me my full feedback."
-        elif send_clicked and user_input and user_input.strip():
-            final_input = user_input.strip()
-
-        if final_input:
-            st.session_state.conv_interview_messages.append({"role": "user", "content": final_input})
-            with st.spinner("🤖 Thinking..."):
-                ai_reply = ai_handler.chat_interview_turn(
-                    messages=st.session_state.conv_interview_messages,
-                    role=role, level=level, model_name=selected_model,
-                )
-            st.session_state.conv_interview_messages.append({"role": "assistant", "content": ai_reply})
-            review_triggers = ["let me take off the interviewer hat", "interview over", "overall impression", "score:", "biggest red flag"]
-            if any(t in ai_reply.lower() for t in review_triggers):
-                st.session_state.conv_interview_done = True
-            st.rerun()
-    else:
+    # ── If interview is done → show text review (already spoken) ─────────
+    if is_done:
+        st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
+        for msg in messages:
+            is_review_msg = ("let me take off the interviewer hat" in msg["content"].lower()
+                             or "overall impression" in msg["content"].lower())
+            _render_message_bubble(msg["role"], msg["content"], is_review=is_review_msg)
         st.markdown("""
-        <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:14px 18px;margin-top:12px;text-align:center;">
-            <div style="color:#22c55e;font-weight:700;font-size:0.95rem;margin-bottom:4px;">🎓 Interview Complete</div>
-            <div style="color:#64748b;font-size:0.82rem;">Review your feedback above. Click <strong style="color:#94a3b8;">New Interview</strong> to practice again.</div>
+        <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);
+                    border-radius:12px;padding:14px 18px;margin-top:12px;text-align:center;">
+          <div style="color:#22c55e;font-weight:700;font-size:.95rem;margin-bottom:4px;">
+            🎓 Interview Complete
+          </div>
+          <div style="color:#64748b;font-size:.82rem;">
+            Your full review is above. Click <strong style="color:#94a3b8;">New</strong> to practice again.
+          </div>
         </div>
         """, unsafe_allow_html=True)
+        return
+
+    # ── Main voice UI: Avatar + TTS + STT ────────────────────────────────
+    latest_ai_msg = next(
+        (m["content"] for m in reversed(messages) if m["role"] == "assistant"), ""
+    )
+
+    # Render the animated avatar voice component
+    avatar_html = _build_avatar_voice_html(
+        ai_message=latest_ai_msg,
+        history=messages,
+        interviewer_name=interviewer_name,
+        company=interviewer_co,
+        height=440,
+    )
+    _cmp.html(avatar_html, height=450, scrolling=False)
+
+    # ── Bridge: capture voice transcript OR typed answer ─────────────────
+    st.markdown(
+        '<div style="font-family:DM Mono,monospace;font-size:.62rem;color:rgba(0,210,255,.6);'
+        'text-transform:uppercase;letter-spacing:.1em;margin:10px 0 4px;">'
+        '📝 Your Answer <span style="color:#334155;font-size:.55rem;text-transform:none;'
+        'letter-spacing:0;"> — spoken transcript auto-appears here, or type directly</span></div>',
+        unsafe_allow_html=True
+    )
+    user_answer = st.text_area(
+        "answer", key="conv_voice_answer",
+        placeholder="Your spoken answer appears here automatically. You can also type directly.",
+        height=100, label_visibility="collapsed"
+    )
+
+    # Action buttons
+    b1, b2, b3 = st.columns([2, 2, 1])
+    wrap_up = False
+    with b1:
+        if st.button("✅ Submit Answer", key="conv_submit_voice",
+                     use_container_width=True, type="primary"):
+            pass  # handled below
+    with b2:
+        if st.button("🏁 Wrap up — give me my review", key="conv_wrapup_voice",
+                     use_container_width=True):
+            wrap_up = True
+    with b3:
+        if st.button("🔁 Skip Q", key="conv_skip", use_container_width=True):
+            user_answer = "[Skipped this question]"
+
+    # Handle submit
+    submit_clicked = st.session_state.get("FormSubmitter:conv_submit_voice", False)
+    final_input = ""
+    if wrap_up:
+        final_input = "That's all from my side. No more questions. Please wrap up and give me my full Head of Talent review."
+    elif (st.session_state.get("conv_submit_voice") or submit_clicked) and user_answer and user_answer.strip():
+        final_input = user_answer.strip()
+    elif user_answer and user_answer.strip() and "[Skipped" in user_answer:
+        final_input = user_answer
+
+    # Check if submit button was actually pressed this rerun
+    # Streamlit button returns True only on the rerun it was clicked
+    btn_pressed = any([
+        wrap_up,
+        (user_answer and user_answer.strip() and st.session_state.get("_conv_last_answer","") != user_answer.strip())
+    ])
+
+    if final_input:
+        st.session_state["_conv_last_answer"] = final_input
+        st.session_state.conv_interview_messages.append(
+            {"role": "user", "content": final_input}
+        )
+        with st.spinner("🤖 Your interviewer is responding..."):
+            ai_reply = ai_handler.chat_interview_turn(
+                messages=st.session_state.conv_interview_messages,
+                role=role, level=level, model_name=selected_model,
+            )
+        st.session_state.conv_interview_messages.append(
+            {"role": "assistant", "content": ai_reply}
+        )
+        review_triggers = [
+            "let me take off the interviewer hat",
+            "interview over", "overall impression",
+            "score:", "biggest red flag", "head of talent"
+        ]
+        if any(t in ai_reply.lower() for t in review_triggers):
+            st.session_state.conv_interview_done = True
+        st.rerun()
+
+    # ── Browser → Streamlit voice submit bridge ──────────────────────────
+    # Inject a tiny JS listener that catches the postMessage from the iframe
+    # and fills the textarea + clicks Submit automatically
+    _cmp.html("""
+    <script>
+    window.addEventListener('message', function(e) {
+      if (!e.data) return;
+      // Auto-fill transcript into the textarea
+      if (e.data.type === 'jl-voice-transcript' || e.data.type === 'jl-voice-submit') {
+        var txt = e.data.text || '';
+        if (!txt) return;
+        // Find Streamlit textareas in parent
+        try {
+          var tas = window.parent.document.querySelectorAll('textarea');
+          tas.forEach(function(ta) {
+            if (ta.placeholder && ta.placeholder.includes('spoken answer')) {
+              var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLTextAreaElement.prototype, 'value').set;
+              nativeInputValueSetter.call(ta, txt);
+              ta.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          });
+        } catch(err) {}
+      }
+    });
+    </script>
+    """, height=0)
 
 
 def render_tab_mock_interview(ai_handler: AIHandler, selected_model: str):
@@ -3880,7 +4472,7 @@ def render_tab_mock_interview(ai_handler: AIHandler, selected_model: str):
             st.session_state.interview_mode = "voice"
             st.rerun()
     with m3:
-        if st.button("🤖 AI Live Interview  🔥 NEW", use_container_width=True,
+        if st.button("🎙️ AI Voice Assistant  🔥 NEW", use_container_width=True,
                      type="primary" if mode == "conv" else "secondary", key="mode_conv"):
             st.session_state.interview_mode = "conv"
             st.rerun()

@@ -334,7 +334,7 @@ PROVIDER_INTERNAL = {
     "Cohere  🆓":         "cohere",
 }
 
-# ==================== V5 LANDING PAGE (pre-API key) ====================
+# ==================== V5 LANDING PAGE ====================
 _V5_LANDING_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -343,50 +343,37 @@ _V5_LANDING_HTML = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Epilogue:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#F5F2EC;--ink:#0C0C0C;--blue:#0047FF;--gray:#7A7A7A;--rule:#D4D0C8;--soft:#E8E4DC;--white:#FAFAF7;}
+:root{--paper:#F5F2EC;--ink:#0C0C0C;--blue:#0047FF;--gray:#7A7A7A;--rule:#D4D0C8;--soft:#E8E4DC;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{font-size:16px;scroll-behavior:smooth;}
-body{background:var(--paper);color:var(--ink);font-family:'Epilogue',sans-serif;overflow-x:hidden;}
-/* NAV */
+html{scroll-behavior:smooth;}body{background:var(--paper);color:var(--ink);font-family:'Epilogue',sans-serif;overflow-x:hidden;}
 nav{position:sticky;top:0;z-index:200;height:60px;background:var(--paper);border-bottom:1px solid var(--rule);display:flex;align-items:center;padding:0 48px;gap:36px;}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:.98rem;letter-spacing:-.03em;color:var(--ink);display:flex;align-items:center;gap:9px;margin-right:auto;text-decoration:none;}
 .logo-sq{width:20px;height:20px;background:var(--ink);border-radius:3px;display:flex;align-items:center;justify-content:center;}
 .logo-sq svg{width:10px;height:10px;fill:var(--paper);}
-.nav-l{display:flex;gap:28px;list-style:none;}
-.nav-l a{font-family:'Epilogue',sans-serif;font-size:.78rem;font-weight:400;letter-spacing:.02em;color:var(--gray);text-decoration:none;}
+.nav-l{display:flex;gap:28px;list-style:none;}.nav-l a{font-family:'Epilogue',sans-serif;font-size:.78rem;font-weight:400;letter-spacing:.02em;color:var(--gray);text-decoration:none;}
 .nb{font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;padding:8px 20px;border-radius:3px;border:none;cursor:pointer;transition:all .2s;}
-.nb-g{background:none;color:var(--gray);border:1px solid var(--rule);}
-.nb-s{background:var(--ink);color:var(--paper);}
-.nb-s:hover{background:var(--blue);}
-/* API KEY BANNER */
+.nb-g{background:none;color:var(--gray);border:1px solid var(--rule);}.nb-s{background:var(--ink);color:var(--paper);}.nb-s:hover{background:var(--blue);}
 .api-banner{background:var(--ink);padding:12px 48px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
 .api-text{font-family:'Space Mono',monospace;font-size:.62rem;letter-spacing:.1em;color:rgba(255,255,255,.45);}
 .api-pill{display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:#fff;background:var(--blue);padding:7px 16px;border-radius:2px;}
-/* HERO */
 .hero{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 100px);border-bottom:1px solid var(--rule);}
 .hero-l{padding:72px 56px 64px;border-right:1px solid var(--rule);display:flex;flex-direction:column;justify-content:space-between;}
 .h-tag{display:inline-flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gray);margin-bottom:44px;}
 .h-tag span{width:6px;height:6px;background:var(--blue);border-radius:50%;animation:blink 2s ease-in-out infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
 .h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(3.4rem,5.5vw,6.4rem);line-height:.9;letter-spacing:-.05em;color:var(--ink);animation:riseUp .9s cubic-bezier(.16,1,.3,1) both;}
-.h1 .em{font-family:'Epilogue',sans-serif;font-style:italic;font-weight:300;display:block;}
-.h1 .bl{color:var(--blue);}
+.h1 .em{font-family:'Epilogue',sans-serif;font-style:italic;font-weight:300;display:block;}.h1 .bl{color:var(--blue);}
 @keyframes riseUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 .hero-desc{margin-top:32px;font-size:.95rem;font-weight:300;line-height:1.8;color:var(--gray);max-width:360px;animation:riseUp .9s .1s cubic-bezier(.16,1,.3,1) both;}
 .hero-btns{margin-top:36px;display:flex;gap:10px;animation:riseUp .9s .2s cubic-bezier(.16,1,.3,1) both;}
-.btn-p{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.03em;background:var(--ink);color:var(--paper);border:none;padding:13px 30px;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;gap:9px;transition:background .2s,transform .15s;}
-.btn-p:hover{background:var(--blue);transform:translateY(-2px);}
+.btn-p{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.03em;background:var(--ink);color:var(--paper);border:none;padding:13px 30px;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;gap:9px;transition:background .2s,transform .15s;}.btn-p:hover{background:var(--blue);transform:translateY(-2px);}
 .btn-g{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:600;letter-spacing:.03em;background:none;color:var(--ink);border:1px solid var(--rule);padding:13px 24px;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
 .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule);margin-top:auto;}
-.hs{padding:20px 0;border-right:1px solid var(--rule);}
-.hs:last-child{border-right:none;}
-.hs-n{font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-.04em;color:var(--ink);display:block;}
-.hs-n .b{color:var(--blue);}
+.hs{padding:20px 0;border-right:1px solid var(--rule);}.hs:last-child{border-right:none;}
+.hs-n{font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-.04em;color:var(--ink);display:block;}.hs-n .b{color:var(--blue);}
 .hs-l{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);display:block;margin-top:3px;}
-/* HERO RIGHT — WebGL canvas */
 .hero-r{position:relative;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;}
 #hero-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
-/* Resume float card */
 .resume-float{position:relative;z-index:10;width:min(320px,70%);background:rgba(250,250,247,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;backdrop-filter:blur(20px);overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.5);animation:riseUp 1s .3s cubic-bezier(.16,1,.3,1) both;}
 .rf-bar{background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.08);padding:10px 14px;display:flex;align-items:center;gap:6px;}
 .rf-d{width:8px;height:8px;border-radius:50%;}.rf-r{background:#FF5F57;}.rf-y{background:#FEBC2E;}.rf-g{background:#28C840;}
@@ -415,139 +402,85 @@ nav{position:sticky;top:0;z-index:200;height:60px;background:var(--paper);border
 .rf-bar-fill.b3{background:#F59E0B;width:72%;animation-delay:1.2s;}
 @keyframes growBar{from{width:0}to{}}
 .rf-bar-v{font-family:'Space Mono',monospace;font-size:.55rem;color:rgba(255,255,255,.5);width:28px;text-align:right;flex-shrink:0;}
-/* Ticker */
 .hero-ticker{grid-column:1/-1;background:var(--ink);border-top:1px solid rgba(255,255,255,.06);height:40px;overflow:hidden;display:flex;align-items:center;}
-.ht-tag{flex-shrink:0;height:100%;padding:0 18px;display:flex;align-items:center;font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--paper);border-right:1px solid rgba(255,255,255,.08);}
+.ht-tag{flex-shrink:0;height:100%;padding:0 18px;display:flex;align-items:center;font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:#F5F2EC;border-right:1px solid rgba(255,255,255,.08);}
 .ht-inner{overflow:hidden;flex:1;}
 .ht-t{display:flex;white-space:nowrap;animation:ticK 32s linear infinite;}
 @keyframes ticK{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .ti{font-family:'Space Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.4);padding:0 22px;display:inline-flex;align-items:center;gap:6px;}
 .ti .u{color:#4ADE80;}.ti .d{color:#F87171;}
-/* TOOLS */
 .tools{border-bottom:1px solid var(--rule);}
 .tools-head{padding:80px 56px 60px;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:end;border-bottom:1px solid var(--rule);}
 .sec-eye{font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gray);margin-bottom:14px;}
 .sec-h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2rem,3vw,3.2rem);letter-spacing:-.04em;line-height:1;}
-.sec-h2 em{font-family:'Epilogue',sans-serif;font-style:italic;font-weight:300;}
-.sec-h2 .bl{color:var(--blue);}
+.sec-h2 em{font-family:'Epilogue',sans-serif;font-style:italic;font-weight:300;}.sec-h2 .bl{color:var(--blue);}
 .sec-sub{font-size:.9rem;font-weight:300;line-height:1.8;color:var(--gray);}
 .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);}
 .tc{border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:0;overflow:hidden;position:relative;cursor:pointer;transition:background .3s;}
-.tc:hover{background:var(--ink);}
-.tc:nth-child(3n){border-right:none;}
-.tc:nth-child(n+4){border-bottom:none;}
-.tc-art{height:140px;border-bottom:1px solid var(--rule);overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--soft);transition:background .3s,border-color .3s;}
-.tc:hover .tc-art{border-color:rgba(255,255,255,.06);background:#111;}
-.tc-art svg{width:100%;height:100%;overflow:visible;}
-.tc-body{padding:24px 24px 28px;}
-.tc-n{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.12em;color:var(--rule);margin-bottom:12px;transition:color .3s;}
-.tc:hover .tc-n{color:rgba(255,255,255,.2);}
-.tc-t{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px;transition:color .3s;}
-.tc:hover .tc-t{color:#fff;}
-.tc-d{font-size:.8rem;font-weight:300;line-height:1.6;color:var(--gray);transition:color .3s;}
-.tc:hover .tc-d{color:rgba(255,255,255,.4);}
-.tc-arrow{position:absolute;bottom:20px;right:20px;font-size:1rem;color:var(--rule);transition:color .25s,transform .25s;}
-.tc:hover .tc-arrow{color:var(--blue);transform:translate(3px,-3px);}
-/* PROCESS */
+.tc:hover{background:var(--ink);}.tc:nth-child(3n){border-right:none;}.tc:nth-child(n+4){border-bottom:none;}
+.tc-art{height:140px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:center;background:var(--soft);transition:background .3s,border-color .3s;}
+.tc:hover .tc-art{border-color:rgba(255,255,255,.06);background:#111;}.tc-art svg{width:100%;height:100%;overflow:visible;}
+.tc-body{padding:24px 24px 30px;}
+.tc-n{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.12em;color:var(--rule);margin-bottom:12px;transition:color .3s;}.tc:hover .tc-n{color:rgba(255,255,255,.2);}
+.tc-t{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px;transition:color .3s;}.tc:hover .tc-t{color:#fff;}
+.tc-d{font-size:.8rem;font-weight:300;line-height:1.6;color:var(--gray);transition:color .3s;}.tc:hover .tc-d{color:rgba(255,255,255,.4);}
+.tc-arrow{position:absolute;bottom:20px;right:20px;font-size:1rem;color:var(--rule);transition:color .25s,transform .25s;}.tc:hover .tc-arrow{color:var(--blue);transform:translate(3px,-3px);}
 .process{padding:80px 56px;border-bottom:1px solid var(--rule);}
 .proc-head{display:grid;grid-template-columns:1fr 2fr;gap:80px;margin-bottom:48px;align-items:end;}
 .proc-steps{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule);}
-.ps{padding:32px 24px;border-right:1px solid var(--rule);}
-.ps:last-child{border-right:none;}
+.ps{padding:32px 24px;border-right:1px solid var(--rule);}.ps:last-child{border-right:none;}
 .ps-n{font-family:'Syne',sans-serif;font-size:3rem;font-weight:800;letter-spacing:-.05em;color:var(--rule);line-height:1;margin-bottom:18px;}
 .ps-t{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;color:var(--ink);margin-bottom:7px;}
 .ps-d{font-size:.78rem;font-weight:300;line-height:1.65;color:var(--gray);}
-/* EDITORIAL */
 .editorial{padding:80px 56px;background:var(--soft);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);}
 .ed-grid{display:grid;grid-template-columns:1fr 2fr;gap:80px;align-items:start;}
 .ed-lbl{font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gray);margin-bottom:18px;padding-top:8px;border-top:1px solid var(--rule);}
 .ed-meta{font-size:.78rem;color:var(--gray);line-height:1.7;}
 .ed-q{font-family:'Epilogue',sans-serif;font-style:italic;font-weight:300;font-size:clamp(1.5rem,2.4vw,2.6rem);line-height:1.35;letter-spacing:-.02em;color:var(--ink);padding-top:8px;border-top:2px solid var(--ink);}
-/* TESTIMONIALS */
 .testis{padding:80px 56px;border-bottom:1px solid var(--rule);}
 .trow{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);}
-.tcard{padding:32px 24px;border-right:1px solid var(--rule);}
-.tcard:last-child{border-right:none;}
+.tcard{padding:32px 24px;border-right:1px solid var(--rule);}.tcard:last-child{border-right:none;}
 .tc-stars{font-size:.7rem;letter-spacing:3px;color:var(--blue);margin-bottom:14px;}
 .tc-q{font-family:'Epilogue',sans-serif;font-size:.88rem;font-style:italic;font-weight:300;color:var(--ink);line-height:1.7;margin-bottom:20px;}
 .tc-auth{display:flex;align-items:center;gap:10px;}
 .tc-av{width:30px;height:30px;border-radius:50%;background:var(--soft);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;}
 .tc-name{font-size:.78rem;font-weight:700;color:var(--ink);}
 .tc-role{font-family:'Space Mono',monospace;font-size:.54rem;color:var(--gray);letter-spacing:.04em;margin-top:2px;}
-/* CTA */
 .cta{padding:100px 56px;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;}
 .cta-h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.2rem,3.8vw,4.5rem);letter-spacing:-.05em;line-height:.92;color:var(--ink);}
-.cta-h2 em{font-family:'Epilogue',sans-serif;font-style:italic;font-weight:300;}
-.cta-h2 .bl{color:var(--blue);}
-.cta-r{display:flex;flex-direction:column;gap:16px;}
-.cta-r p{font-size:.88rem;font-weight:300;line-height:1.8;color:var(--gray);}
+.cta-h2 em{font-family:'Epilogue',sans-serif;font-style:italic;font-weight:300;}.cta-h2 .bl{color:var(--blue);}
+.cta-r{display:flex;flex-direction:column;gap:16px;}.cta-r p{font-size:.88rem;font-weight:300;line-height:1.8;color:var(--gray);}
 .cta-btns{display:flex;gap:10px;flex-wrap:wrap;}
-.cta-note{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.08em;color:var(--gray);}
-.cta-note span{color:var(--blue);}
-/* FOOTER */
+.cta-note{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.08em;color:var(--gray);}.cta-note span{color:var(--blue);}
 footer{padding:48px 56px 28px;border-top:1px solid var(--rule);}
 .ft-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;padding-bottom:40px;border-bottom:1px solid var(--rule);margin-bottom:20px;}
 .ft-bn{font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--ink);}
 .ft-bp{font-size:.8rem;font-weight:300;color:var(--gray);line-height:1.7;max-width:220px;}
 .ft-ch{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gray);margin-bottom:12px;}
-.ft-links{list-style:none;}
-.ft-links li{margin-bottom:7px;}
-.ft-links a{font-size:.8rem;font-weight:300;color:var(--gray);text-decoration:none;}
+.ft-links{list-style:none;}.ft-links li{margin-bottom:7px;}.ft-links a{font-size:.8rem;font-weight:300;color:var(--gray);text-decoration:none;}
 .ft-btm{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
-.ft-copy{font-family:'Space Mono',monospace;font-size:.54rem;letter-spacing:.06em;color:var(--gray);}
-.ft-copy strong{color:var(--blue);}
-@media(max-width:1000px){
-  nav{padding:0 24px;}
-  .hero{grid-template-columns:1fr;min-height:auto;}
-  .hero-l{padding:48px 24px 36px;}
-  .hero-r{height:360px;}
-  .tools-head,.proc-head,.cta,.ed-grid{grid-template-columns:1fr;gap:20px;padding:48px 24px 36px;}
-  .tools-grid{grid-template-columns:1fr 1fr;}
-  .proc-steps,.trow{grid-template-columns:1fr 1fr;}
-  .editorial,.testis,.process{padding:56px 24px;}
-  .ft-row{grid-template-columns:1fr 1fr;gap:28px;}
-}
-@media(max-width:600px){
-  .tools-grid,.proc-steps,.trow,.ft-row{grid-template-columns:1fr;}
-  .hero-stats{grid-template-columns:1fr 1fr;}
-  .h1{font-size:3rem;}
-  .hero-l{padding:36px 18px 28px;}
-  .hero-r{height:280px;}
-  .cta{padding:64px 18px;}
-}
+.ft-copy{font-family:'Space Mono',monospace;font-size:.54rem;letter-spacing:.06em;color:var(--gray);}.ft-copy strong{color:var(--blue);}
+@media(max-width:1000px){nav{padding:0 24px;}.hero{grid-template-columns:1fr;min-height:auto;}.hero-l{padding:48px 24px 36px;}.hero-r{height:360px;}.tools-head,.proc-head,.cta,.ed-grid{grid-template-columns:1fr;gap:20px;padding:48px 24px 36px;}.tools-grid{grid-template-columns:1fr 1fr;}.proc-steps,.trow{grid-template-columns:1fr 1fr;}.editorial,.testis,.process{padding:56px 24px;}.ft-row{grid-template-columns:1fr 1fr;gap:28px;}}
+@media(max-width:600px){.tools-grid,.proc-steps,.trow,.ft-row{grid-template-columns:1fr;}.hero-stats{grid-template-columns:1fr 1fr;}.h1{font-size:3rem;}.hero-l{padding:36px 18px 28px;}.hero-r{height:280px;}.cta{padding:64px 18px;}}
 </style>
 </head>
 <body>
-
 <nav>
-  <a class="logo" href="#">
-    <div class="logo-sq"><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3"/></svg></div>
-    JobLess AI
-  </a>
-  <ul class="nav-l">
-    <li><a href="#tools">Features</a></li>
-    <li><a href="#process">How It Works</a></li>
-    <li><a href="#cta">Get Started</a></li>
-  </ul>
-  <button class="nb nb-g">Sign In</button>
-  <button class="nb nb-s" onclick="document.querySelector('.api-banner').scrollIntoView({behavior:'smooth'})">Get Started</button>
+  <a class="logo" href="#"><div class="logo-sq"><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3"/></svg></div>JobLess AI</a>
+  <ul class="nav-l"><li><a href="#tools">Features</a></li><li><a href="#process">How It Works</a></li></ul>
+  <button class="nb nb-g">Sign In</button><button class="nb nb-s">Get Started</button>
 </nav>
-
 <div class="api-banner">
-  <span class="api-text">// Enter your Anthropic / OpenAI / Gemini API key in the sidebar (←) to unlock the full dashboard</span>
-  <div class="api-pill">← Add API Key in Sidebar to Begin</div>
+  <span class="api-text">// Enter your API key in the sidebar on the left ← to unlock the full dashboard</span>
+  <div class="api-pill">← Add API Key in Sidebar</div>
 </div>
-
 <section class="hero">
   <div class="hero-l">
     <div>
       <div class="h-tag"><span></span>AI Career Intelligence · Powered by Claude</div>
       <h1 class="h1">Land your<br><span class="bl">dream</span><br><span class="em">role.</span></h1>
       <p class="hero-desc">Upload your resume. Get a deep career analysis, ATS-optimised documents, mock interviews, and a clear roadmap to the offers you deserve.</p>
-      <div class="hero-btns">
-        <button class="btn-p">Analyse My Resume →</button>
-        <button class="btn-g">▶ See Features</button>
-      </div>
+      <div class="hero-btns"><button class="btn-p">Analyse My Resume →</button><button class="btn-g">▶ See Features</button></div>
     </div>
     <div class="hero-stats">
       <div class="hs"><span class="hs-n"><span class="b" id="c1">0</span>%</span><span class="hs-l">ATS Pass Rate</span></div>
@@ -562,21 +495,11 @@ footer{padding:48px 56px 28px;border-top:1px solid var(--rule);}
       <div class="rf-bar"><div class="rf-d rf-r"></div><div class="rf-d rf-y"></div><div class="rf-d rf-g"></div></div>
       <div class="rf-body">
         <div class="rf-label">Resume Analysis · Live</div>
-        <div class="rf-name">Your Name Here</div>
-        <div class="rf-role">→ Target Role · Target Company</div>
+        <div class="rf-name">Your Name Here</div><div class="rf-role">→ Target Role · Target Company</div>
         <div class="rf-scan"><div class="rf-scan-fill"></div></div>
-        <div class="rf-pills">
-          <span class="rf-pill on">Python</span><span class="rf-pill on">React</span><span class="rf-pill on">ML</span>
-          <span class="rf-pill off">Go</span><span class="rf-pill on">AWS</span><span class="rf-pill off">K8s</span>
-        </div>
+        <div class="rf-pills"><span class="rf-pill on">Python</span><span class="rf-pill on">React</span><span class="rf-pill on">ML</span><span class="rf-pill off">Go</span><span class="rf-pill on">AWS</span><span class="rf-pill off">K8s</span></div>
         <div class="rf-score-row">
-          <svg class="rf-ring" viewBox="0 0 54 54">
-            <circle cx="27" cy="27" r="22" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="4"/>
-            <circle cx="27" cy="27" r="22" fill="none" stroke="#0047FF" stroke-width="4"
-              stroke-dasharray="138.23" stroke-dashoffset="17.97" stroke-linecap="round" transform="rotate(-90 27 27)">
-              <animate attributeName="stroke-dashoffset" from="138.23" to="17.97" dur="1.5s" begin="0.5s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/>
-            </circle>
-          </svg>
+          <svg class="rf-ring" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="4"/><circle cx="27" cy="27" r="22" fill="none" stroke="#0047FF" stroke-width="4" stroke-dasharray="138.23" stroke-dashoffset="17.97" stroke-linecap="round" transform="rotate(-90 27 27)"><animate attributeName="stroke-dashoffset" from="138.23" to="17.97" dur="1.5s" begin="0.5s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/></circle></svg>
           <div><span class="rf-score-big">87%</span><span class="rf-score-sub">ATS Score</span></div>
         </div>
         <div class="rf-bars">
@@ -590,93 +513,59 @@ footer{padding:48px 56px 28px;border-top:1px solid var(--rule);}
   <div class="hero-ticker">
     <div class="ht-tag">Market Pulse</div>
     <div class="ht-inner"><div class="ht-t">
-      <span class="ti">SWE <span class="u">↑12%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">AI/ML <span class="u">↑31%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">Data Sci <span class="u">↑8%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">Product Mgr <span class="d">↓3%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">DevOps <span class="u">↑19%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">Avg CTC ₹18.4L <span class="u">↑7%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">Cloud <span class="u">↑22%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">Full Stack <span class="u">↑14%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">SWE <span class="u">↑12%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">AI/ML <span class="u">↑31%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">Data Sci <span class="u">↑8%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
-      <span class="ti">Cloud <span class="u">↑22%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
+      <span class="ti">SWE <span class="u">↑12%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">AI/ML <span class="u">↑31%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">Data Sci <span class="u">↑8%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">Product Mgr <span class="d">↓3%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">DevOps <span class="u">↑19%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">Avg CTC ₹18.4L <span class="u">↑7%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">Cloud <span class="u">↑22%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">Full Stack <span class="u">↑14%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
+      <span class="ti">SWE <span class="u">↑12%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">AI/ML <span class="u">↑31%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">Data Sci <span class="u">↑8%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span><span class="ti">Cloud <span class="u">↑22%</span><span style="color:rgba(255,255,255,.1);margin:0 8px">·</span></span>
     </div></div>
   </div>
 </section>
-
 <section class="tools" id="tools">
   <div class="tools-head">
     <div><div class="sec-eye">// Six tools. One platform.</div><h2 class="sec-h2">Everything to<br><em>get <span class="bl">hired.</span></em></h2></div>
     <p class="sec-sub">Every feature is built on frontier AI — analysing your real-world profile against live market data so every career move is a calculated one.</p>
   </div>
   <div class="tools-grid">
-    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><defs><radialGradient id="ng1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#0047FF" stop-opacity=".15"/><stop offset="100%" stop-color="#0047FF" stop-opacity="0"/></radialGradient></defs><ellipse cx="140" cy="70" rx="90" ry="50" fill="url(#ng1)"/><g stroke="#0047FF" stroke-opacity=".18" stroke-width="1"><line x1="140" y1="70" x2="60" y2="30"/><line x1="140" y1="70" x2="220" y2="35"/><line x1="140" y1="70" x2="75" y2="115"/><line x1="140" y1="70" x2="210" y2="110"/><line x1="60" y1="30" x2="30" y2="80"/><line x1="220" y1="35" x2="250" y2="90"/></g><circle r="3" fill="#0047FF" opacity=".8"><animateMotion dur="3s" repeatCount="indefinite" path="M140,70 L60,30 L30,80 L75,115 L140,70"/></circle><circle cx="140" cy="70" r="10" fill="none" stroke="#0047FF" stroke-width="2"/><circle cx="140" cy="70" r="5" fill="#0047FF"/><circle cx="60" cy="30" r="6" fill="none" stroke="#0047FF" stroke-width="1.5" opacity=".7"/><circle cx="60" cy="30" r="3" fill="#0047FF" opacity=".7"/><circle cx="220" cy="35" r="6" fill="none" stroke="#0047FF" stroke-width="1.5" opacity=".7"/><circle cx="75" cy="115" r="5" fill="none" stroke="#4ADE80" stroke-width="1.5" opacity=".7"/><circle cx="210" cy="110" r="5" fill="none" stroke="#4ADE80" stroke-width="1.5" opacity=".7"/></svg></div><div class="tc-body"><div class="tc-n">01 ─</div><div class="tc-t">Career Analysis</div><div class="tc-d">Deep scan against 10k+ JD patterns. Skill gaps, salary benchmarks, and a prioritised action plan.</div><span class="tc-arrow">↗</span></div></div>
-    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><rect x="30" y="20" width="80" height="100" rx="4" fill="none" stroke="#D4D0C8" stroke-width="1.5"/><line x1="42" y1="40" x2="98" y2="40" stroke="#D4D0C8" stroke-width="1.5"/><line x1="42" y1="52" x2="88" y2="52" stroke="#D4D0C8" stroke-width="1"/><line x1="42" y1="62" x2="92" y2="62" stroke="#D4D0C8" stroke-width="1"/><line x1="42" y1="72" x2="80" y2="72" stroke="#D4D0C8" stroke-width="1"/><g><line x1="125" y1="70" x2="155" y2="70" stroke="#0047FF" stroke-width="2" stroke-linecap="round"/><polygon points="155,65 165,70 155,75" fill="#0047FF"/></g><rect x="170" y="20" width="80" height="100" rx="4" fill="rgba(0,71,255,0.04)" stroke="#0047FF" stroke-width="1.5" stroke-opacity=".6"/><line x1="182" y1="38" x2="238" y2="38" stroke="#0047FF" stroke-width="2.5" stroke-opacity=".8"/><line x1="182" y1="50" x2="238" y2="50" stroke="#0047FF" stroke-width="1" stroke-opacity=".4"/><line x1="182" y1="60" x2="230" y2="60" stroke="#0047FF" stroke-width="1" stroke-opacity=".4"/><rect x="188" y="108" width="36" height="10" rx="5" fill="#0047FF"/><text x="206" y="116" text-anchor="middle" font-family="Space Mono" font-size="5" fill="white">ATS 87%</text></svg></div><div class="tc-body"><div class="tc-n">02 ─</div><div class="tc-t">Resume Builder</div><div class="tc-d">ATS-crushing resumes tailored to the exact JD. Claude rewrites, scores, and exports as polished PDF.</div><span class="tc-arrow">↗</span></div></div>
-    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><rect x="127" y="14" width="26" height="38" rx="13" fill="none" stroke="#0047FF" stroke-width="2"/><path d="M140,52 Q140,70 140,76" stroke="#0047FF" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M118,64 Q118,80 140,80 Q162,80 162,64" stroke="#0047FF" stroke-width="2" fill="none"/><g fill="#0047FF"><rect x="58" y="75" width="7" height="40" rx="3.5" opacity=".7"><animate attributeName="height" values="40;20;50;25;40" dur="1.6s" repeatCount="indefinite"/></rect><rect x="72" y="80" width="7" height="30" rx="3.5" opacity=".9"><animate attributeName="height" values="30;50;18;42;30" dur="1.2s" repeatCount="indefinite"/></rect><rect x="86" y="72" width="7" height="46" rx="3.5"><animate attributeName="height" values="46;20;55;28;46" dur="1.5s" repeatCount="indefinite"/></rect></g><g fill="#4ADE80"><rect x="180" y="75" width="7" height="42" rx="3.5"><animate attributeName="height" values="42;22;54;30;42" dur="1.3s" repeatCount="indefinite"/></rect><rect x="194" y="80" width="7" height="32" rx="3.5" opacity=".9"><animate attributeName="height" values="32;52;20;44;32" dur="1.6s" repeatCount="indefinite"/></rect><rect x="208" y="84" width="7" height="24" rx="3.5" opacity=".7"><animate attributeName="height" values="24;44;14;36;24" dur="1.4s" repeatCount="indefinite"/></rect></g></svg></div><div class="tc-body"><div class="tc-n">03 ─</div><div class="tc-t">Mock Interview</div><div class="tc-d">Role-specific technical and behavioural questions. AI evaluates answers and coaches you in real time.</div><span class="tc-arrow">↗</span></div></div>
-    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><rect x="82" y="38" width="116" height="82" rx="5" fill="none" stroke="#D4D0C8" stroke-width="1.5" transform="rotate(-4 140 79)"/><rect x="82" y="32" width="116" height="82" rx="5" fill="white" stroke="#D4D0C8" stroke-width="1.5"/><text x="140" y="54" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="800" fill="#0047FF" opacity=".7">GOOGLE</text><line x1="98" y1="64" x2="182" y2="64" stroke="#D4D0C8" stroke-width="1"/><rect x="98" y="72" width="10" height="10" rx="2" fill="none" stroke="#D4D0C8" stroke-width="1"/><line x1="116" y1="77" x2="174" y2="77" stroke="#0C0C0C" stroke-width="1.2" opacity=".5"/><rect x="98" y="90" width="10" height="10" rx="2" fill="#0047FF"/><polyline points="100,95 102.5,98 107,92" stroke="white" stroke-width="1.5" fill="none"/><rect x="155" y="46" width="36" height="12" rx="6" fill="#0047FF"/><text x="173" y="55" text-anchor="middle" font-family="Space Mono" font-size="5" fill="white">10k+ Q&amp;A</text></svg></div><div class="tc-body"><div class="tc-n">04 ─</div><div class="tc-t">PYQ Hub</div><div class="tc-d">10,000+ previous year interview Q&amp;As sorted by company, domain, and seniority level.</div><span class="tc-arrow">↗</span></div></div>
-    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><path d="M30,120 C60,120 60,70 100,70 C140,70 140,30 180,30 C220,30 220,80 250,70" fill="none" stroke="#D4D0C8" stroke-width="2" stroke-dasharray="5,4"/><circle cx="30" cy="120" r="7" fill="white" stroke="#D4D0C8" stroke-width="2"/><circle cx="100" cy="70" r="8" fill="white" stroke="#0047FF" stroke-width="2"/><circle cx="180" cy="30" r="8" fill="#0047FF"/><circle cx="250" cy="70" r="7" fill="white" stroke="#4ADE80" stroke-width="2"/><circle r="4" fill="#0047FF" opacity=".9"><animateMotion dur="4s" repeatCount="indefinite" path="M30,120 C60,120 60,70 100,70 C140,70 140,30 180,30 C220,30 220,80 250,70" calcMode="spline" keySplines="0.4 0 0.6 1"/></circle></svg></div><div class="tc-body"><div class="tc-n">05 ─</div><div class="tc-t">Resources</div><div class="tc-d">Curated roadmaps, courses, and tools organised by career path and experience. Updated daily.</div><span class="tc-arrow">↗</span></div></div>
-    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><line x1="50" y1="15" x2="50" y2="120" stroke="#D4D0C8" stroke-width="1.5"/><line x1="50" y1="120" x2="250" y2="120" stroke="#D4D0C8" stroke-width="1.5"/><rect x="68" y="40" width="22" height="80" rx="3" fill="#0047FF" opacity=".85"><animate attributeName="height" from="0" to="80" dur="1.2s" begin="0.5s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/><animate attributeName="y" from="120" to="40" dur="1.2s" begin="0.5s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/></rect><rect x="92" y="62" width="22" height="58" rx="3" fill="#D4D0C8"><animate attributeName="height" from="0" to="58" dur="1.2s" begin="0.6s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/><animate attributeName="y" from="120" to="62" dur="1.2s" begin="0.6s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/></rect><rect x="200" y="25" width="22" height="95" rx="3" fill="#4ADE80" opacity=".7"><animate attributeName="height" from="0" to="95" dur="1.2s" begin="0.9s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/><animate attributeName="y" from="120" to="25" dur="1.2s" begin="0.9s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/></rect><rect x="224" y="45" width="22" height="75" rx="3" fill="#D4D0C8" opacity=".6"><animate attributeName="height" from="0" to="75" dur="1.2s" begin="1.0s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/><animate attributeName="y" from="120" to="45" dur="1.2s" begin="1.0s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/></rect></svg></div><div class="tc-body"><div class="tc-n">06 ─</div><div class="tc-t">Career Compare</div><div class="tc-d">Side-by-side analysis of career paths. Growth curves, CTC ranges, required skills, and difficulty.</div><span class="tc-arrow">↗</span></div></div>
+    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><defs><radialGradient id="ng1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#0047FF" stop-opacity=".15"/><stop offset="100%" stop-color="#0047FF" stop-opacity="0"/></radialGradient></defs><ellipse cx="140" cy="70" rx="90" ry="50" fill="url(#ng1)"/><g stroke="#0047FF" stroke-opacity=".18" stroke-width="1"><line x1="140" y1="70" x2="60" y2="30"/><line x1="140" y1="70" x2="220" y2="35"/><line x1="140" y1="70" x2="75" y2="115"/><line x1="140" y1="70" x2="210" y2="110"/></g><circle r="3" fill="#0047FF" opacity=".8"><animateMotion dur="3s" repeatCount="indefinite" path="M140,70 L60,30 L75,115 L140,70"/></circle><circle cx="140" cy="70" r="10" fill="none" stroke="#0047FF" stroke-width="2"/><circle cx="140" cy="70" r="5" fill="#0047FF"/><circle cx="60" cy="30" r="6" fill="none" stroke="#0047FF" stroke-width="1.5" opacity=".7"/><circle cx="60" cy="30" r="3" fill="#0047FF" opacity=".7"/><circle cx="75" cy="115" r="5" fill="none" stroke="#4ADE80" stroke-width="1.5" opacity=".7"/></svg></div><div class="tc-body"><div class="tc-n">01 ─</div><div class="tc-t">Career Analysis</div><div class="tc-d">Deep scan against 10k+ JD patterns. Skill gaps, salary benchmarks, and a prioritised action plan.</div><span class="tc-arrow">↗</span></div></div>
+    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><rect x="30" y="20" width="80" height="100" rx="4" fill="none" stroke="#D4D0C8" stroke-width="1.5"/><line x1="42" y1="40" x2="98" y2="40" stroke="#D4D0C8" stroke-width="1.5"/><line x1="42" y1="52" x2="88" y2="52" stroke="#D4D0C8" stroke-width="1"/><g><line x1="125" y1="70" x2="155" y2="70" stroke="#0047FF" stroke-width="2" stroke-linecap="round"/><polygon points="155,65 165,70 155,75" fill="#0047FF"/></g><rect x="170" y="20" width="80" height="100" rx="4" fill="rgba(0,71,255,0.04)" stroke="#0047FF" stroke-width="1.5" stroke-opacity=".6"/><line x1="182" y1="38" x2="238" y2="38" stroke="#0047FF" stroke-width="2.5" stroke-opacity=".8"/><rect x="188" y="108" width="36" height="10" rx="5" fill="#0047FF"/><text x="206" y="116" text-anchor="middle" font-family="Space Mono" font-size="5" fill="white">ATS 87%</text></svg></div><div class="tc-body"><div class="tc-n">02 ─</div><div class="tc-t">Resume Builder</div><div class="tc-d">ATS-crushing resumes tailored to the exact JD. Claude rewrites, scores, and exports as polished PDF.</div><span class="tc-arrow">↗</span></div></div>
+    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><rect x="127" y="14" width="26" height="38" rx="13" fill="none" stroke="#0047FF" stroke-width="2"/><path d="M140,52 Q140,70 140,76" stroke="#0047FF" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M118,64 Q118,80 140,80 Q162,80 162,64" stroke="#0047FF" stroke-width="2" fill="none"/><g fill="#0047FF"><rect x="72" y="80" width="7" height="30" rx="3.5" opacity=".9"><animate attributeName="height" values="30;50;18;42;30" dur="1.2s" repeatCount="indefinite"/></rect><rect x="86" y="72" width="7" height="46" rx="3.5"><animate attributeName="height" values="46;20;55;28;46" dur="1.5s" repeatCount="indefinite"/></rect></g><g fill="#4ADE80"><rect x="180" y="75" width="7" height="42" rx="3.5"><animate attributeName="height" values="42;22;54;30;42" dur="1.3s" repeatCount="indefinite"/></rect><rect x="194" y="80" width="7" height="32" rx="3.5" opacity=".9"><animate attributeName="height" values="32;52;20;44;32" dur="1.6s" repeatCount="indefinite"/></rect></g></svg></div><div class="tc-body"><div class="tc-n">03 ─</div><div class="tc-t">Mock Interview</div><div class="tc-d">Role-specific technical and behavioural questions. AI evaluates and coaches you live.</div><span class="tc-arrow">↗</span></div></div>
+    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><rect x="82" y="32" width="116" height="82" rx="5" fill="white" stroke="#D4D0C8" stroke-width="1.5"/><text x="140" y="54" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="800" fill="#0047FF" opacity=".7">GOOGLE</text><line x1="98" y1="64" x2="182" y2="64" stroke="#D4D0C8" stroke-width="1"/><rect x="98" y="90" width="10" height="10" rx="2" fill="#0047FF"/><polyline points="100,95 102.5,98 107,92" stroke="white" stroke-width="1.5" fill="none"/><rect x="155" y="46" width="36" height="12" rx="6" fill="#0047FF"/><text x="173" y="55" text-anchor="middle" font-family="Space Mono" font-size="5" fill="white">10k+ Q&amp;A</text></svg></div><div class="tc-body"><div class="tc-n">04 ─</div><div class="tc-t">PYQ Hub</div><div class="tc-d">10,000+ previous year interview Q&amp;As sorted by company, domain, and seniority level.</div><span class="tc-arrow">↗</span></div></div>
+    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><path d="M30,120 C60,120 60,70 100,70 C140,70 140,30 180,30 C220,30 220,80 250,70" fill="none" stroke="#D4D0C8" stroke-width="2" stroke-dasharray="5,4"/><circle cx="30" cy="120" r="7" fill="white" stroke="#D4D0C8" stroke-width="2"/><circle cx="100" cy="70" r="8" fill="white" stroke="#0047FF" stroke-width="2"/><circle cx="180" cy="30" r="8" fill="#0047FF"/><circle cx="250" cy="70" r="7" fill="white" stroke="#4ADE80" stroke-width="2"/><circle r="4" fill="#0047FF" opacity=".9"><animateMotion dur="4s" repeatCount="indefinite" path="M30,120 C60,120 60,70 100,70 C140,70 140,30 180,30 C220,30 220,80 250,70" calcMode="spline" keySplines="0.4 0 0.6 1"/></circle></svg></div><div class="tc-body"><div class="tc-n">05 ─</div><div class="tc-t">Resources</div><div class="tc-d">Curated roadmaps, courses, and tools organised by career path. Updated daily.</div><span class="tc-arrow">↗</span></div></div>
+    <div class="tc"><div class="tc-art"><svg viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet"><line x1="50" y1="15" x2="50" y2="120" stroke="#D4D0C8" stroke-width="1.5"/><line x1="50" y1="120" x2="250" y2="120" stroke="#D4D0C8" stroke-width="1.5"/><rect x="68" y="40" width="22" height="80" rx="3" fill="#0047FF" opacity=".85"><animate attributeName="height" from="0" to="80" dur="1.2s" begin="0.5s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/><animate attributeName="y" from="120" to="40" dur="1.2s" begin="0.5s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/></rect><rect x="200" y="25" width="22" height="95" rx="3" fill="#4ADE80" opacity=".7"><animate attributeName="height" from="0" to="95" dur="1.2s" begin="0.9s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/><animate attributeName="y" from="120" to="25" dur="1.2s" begin="0.9s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1"/></rect></svg></div><div class="tc-body"><div class="tc-n">06 ─</div><div class="tc-t">Career Compare</div><div class="tc-d">Side-by-side analysis of career paths. Growth curves, CTC ranges, skills, and difficulty.</div><span class="tc-arrow">↗</span></div></div>
   </div>
 </section>
-
 <section class="process" id="process">
-  <div class="proc-head">
-    <div><div class="sec-eye">// How it works</div><h2 class="sec-h2">Upload.<br>Analyse.<br><em>Get hired.</em></h2></div>
-    <p class="sec-sub">From raw resume to curated, market-ready career strategy — in minutes, not months.</p>
-  </div>
+  <div class="proc-head"><div><div class="sec-eye">// How it works</div><h2 class="sec-h2">Upload.<br>Analyse.<br><em>Get hired.</em></h2></div><p class="sec-sub">From raw resume to curated, market-ready career strategy — in minutes, not months.</p></div>
   <div class="proc-steps">
     <div class="ps"><div class="ps-n">01</div><div class="ps-t">Upload Your Resume</div><div class="ps-d">PDF, DOCX, or LinkedIn export. Parser handles formatting, keywords, and structure automatically.</div></div>
-    <div class="ps"><div class="ps-n">02</div><div class="ps-t">AI Deep Scan</div><div class="ps-d">Claude analyses your profile against thousands of active job descriptions. Full gap analysis and market positioning report.</div></div>
+    <div class="ps"><div class="ps-n">02</div><div class="ps-t">AI Deep Scan</div><div class="ps-d">Claude analyses your profile against thousands of active job descriptions. Full gap analysis and market positioning.</div></div>
     <div class="ps"><div class="ps-n">03</div><div class="ps-t">Build &amp; Optimise</div><div class="ps-d">Generate tailored resumes, practice answers, explore career pivots — guided by live market intelligence.</div></div>
     <div class="ps"><div class="ps-n">04</div><div class="ps-t">Apply with Confidence</div><div class="ps-d">Export polished documents, iterate as offers come in, and watch your interview-to-offer ratio climb.</div></div>
   </div>
 </section>
-
 <section class="editorial">
-  <div class="ed-grid">
-    <div><div class="ed-lbl">Featured Story</div><p class="ed-meta">Priya Sharma<br>Product Manager · Flipkart<br><br>ATS score: 52 → 91<br>Week 1: 3 callbacks</p></div>
-    <div class="ed-q">"I went from zero callbacks to three in one week. The ATS score jumped from 52 to 91 in a single session. Genuinely the most useful career tool I've ever used — and I've tried them all."</div>
-  </div>
+  <div class="ed-grid"><div><div class="ed-lbl">Featured Story</div><p class="ed-meta">Priya Sharma<br>Product Manager · Flipkart<br><br>ATS score: 52 → 91<br>Week 1: 3 callbacks</p></div><div class="ed-q">"I went from zero callbacks to three in one week. The ATS score jumped from 52 to 91 in a single session. Genuinely the most useful career tool I've ever used."</div></div>
 </section>
-
 <section class="testis">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:40px;">
-    <div class="sec-eye" style="margin-bottom:0">// 50,000+ users · ★★★★★ 4.9</div>
-    <span style="font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:var(--blue)">2,400+ reviews</span>
-  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:40px;"><div class="sec-eye" style="margin-bottom:0">// 50,000+ users · ★★★★★ 4.9</div><span style="font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#0047FF">2,400+ reviews</span></div>
   <div class="trow">
     <div class="tcard"><div class="tc-stars">★★★★★</div><div class="tc-q">"The mock interview tool asked me the exact questions that appeared in my Google loop. Three rounds, zero filters."</div><div class="tc-auth"><div class="tc-av">👨‍💻</div><div><div class="tc-name">Rohan Mehta</div><div class="tc-role">SWE · Google Bangalore</div></div></div></div>
     <div class="tcard"><div class="tc-stars">★★★★★</div><div class="tc-q">"Convinced me to pivot to ML engineering. Switched, upskilled, landed a ₹28L offer in four months."</div><div class="tc-auth"><div class="tc-av">🧑‍🔬</div><div><div class="tc-name">Arjun Das</div><div class="tc-role">ML Engineer · Swiggy</div></div></div></div>
     <div class="tcard"><div class="tc-stars">★★★★★</div><div class="tc-q">"Set up in five minutes. Had my career analysis before the next lecture. The gap list alone was worth it."</div><div class="tc-auth"><div class="tc-av">🧑‍🎓</div><div><div class="tc-name">Kavya Iyer</div><div class="tc-role">Final Year · IIT Madras</div></div></div></div>
   </div>
 </section>
-
-<section class="cta" id="cta">
+<section class="cta">
   <h2 class="cta-h2">Your next<br>job starts<br><em>right <span class="bl">here.</span></em></h2>
-  <div class="cta-r">
-    <p>Enter your API key in the sidebar to unlock the full dashboard — career analysis, resume builder, mock interviews, and more. No credit card. No data stored.</p>
-    <div class="cta-btns"><button class="btn-p">Add API Key → Get Started</button></div>
-    <div class="cta-note"><span>✓</span> No credit card &nbsp;·&nbsp; <span>✓</span> Data never stored &nbsp;·&nbsp; <span>✓</span> Use your own API key</div>
-  </div>
+  <div class="cta-r"><p>Enter your API key in the sidebar to unlock the full dashboard. No credit card. No data stored. Your key, your control.</p><div class="cta-btns"><button class="btn-p">Add API Key → Get Started</button></div><div class="cta-note"><span>✓</span> No credit card &nbsp;·&nbsp; <span>✓</span> Data never stored &nbsp;·&nbsp; <span>✓</span> Use your own API key</div></div>
 </section>
-
 <footer>
   <div class="ft-row">
     <div><div class="ft-bn"><div style="width:18px;height:18px;border-radius:3px;background:#0C0C0C;display:inline-flex;align-items:center;justify-content:center;margin-right:8px"><svg width="9" height="9" viewBox="0 0 10 10" fill="#F5F2EC"><circle cx="5" cy="5" r="3"/></svg></div>JobLess AI</div><p class="ft-bp">AI-powered career intelligence for professionals who refuse to leave their future to chance.</p></div>
     <div><div class="ft-ch">Product</div><ul class="ft-links"><li><a href="#">Career Analysis</a></li><li><a href="#">Resume Builder</a></li><li><a href="#">Mock Interview</a></li><li><a href="#">PYQ Hub</a></li></ul></div>
-    <div><div class="ft-ch">Company</div><ul class="ft-links"><li><a href="#">About</a></li><li><a href="#">Blog</a></li><li><a href="#">Changelog</a></li><li><a href="#">Contact</a></li></ul></div>
+    <div><div class="ft-ch">Company</div><ul class="ft-links"><li><a href="#">About</a></li><li><a href="#">Blog</a></li><li><a href="#">Changelog</a></li></ul></div>
     <div><div class="ft-ch">Legal</div><ul class="ft-links"><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="#">Security</a></li></ul></div>
   </div>
-  <div class="ft-btm">
-    <div class="ft-copy">© 2025 JobLess AI · Built by <strong>Anubhab Mondal</strong> · Your data is never stored.</div>
-    <div class="ft-copy">Made in India 🇮🇳</div>
-  </div>
+  <div class="ft-btm"><div class="ft-copy">© 2025 JobLess AI · Built by <strong>Anubhab Mondal</strong> · Your data is never stored.</div><div class="ft-copy">Made in India 🇮🇳</div></div>
 </footer>
-
 <script>
-/* WebGL2 Hero Shader — blue nebula */
 (function(){
   const canvas=document.getElementById('hero-canvas');
   if(!canvas)return;
@@ -689,21 +578,17 @@ footer{padding:48px 56px 28px;border-top:1px solid var(--rule);}
   gl.attachShader(prog,mkShader(gl.VERTEX_SHADER,VERT));
   gl.attachShader(prog,mkShader(gl.FRAGMENT_SHADER,FRAG));
   gl.linkProgram(prog);
-  const buf=gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,1,-1,-1,1,1,1,-1]),gl.STATIC_DRAW);
   const pos=gl.getAttribLocation(prog,'position');
-  gl.enableVertexAttribArray(pos);
-  gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+  gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
   const uRes=gl.getUniformLocation(prog,'resolution'),uTime=gl.getUniformLocation(prog,'time');
   function resize(){const dpr=Math.max(1,0.5*(window.devicePixelRatio||1));canvas.width=canvas.offsetWidth*dpr;canvas.height=canvas.offsetHeight*dpr;gl.viewport(0,0,canvas.width,canvas.height);}
   window.addEventListener('resize',resize);resize();
-  let raf;
-  function loop(now){gl.useProgram(prog);gl.uniform2f(uRes,canvas.width,canvas.height);gl.uniform1f(uTime,now*1e-3);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);raf=requestAnimationFrame(loop);}
+  let raf;function loop(now){gl.useProgram(prog);gl.uniform2f(uRes,canvas.width,canvas.height);gl.uniform1f(uTime,now*1e-3);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);raf=requestAnimationFrame(loop);}
   raf=requestAnimationFrame(loop);
-  document.addEventListener('visibilitychange',()=>{ if(document.hidden)cancelAnimationFrame(raf); else raf=requestAnimationFrame(loop); });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAnimationFrame(raf);else raf=requestAnimationFrame(loop);});
 })();
-/* Stat counters */
 function cnt(id,end,dec){const el=document.getElementById(id);if(!el)return;let s=null;(function step(ts){if(!s)s=ts;const p=Math.min((ts-s)/1600,1);const e=1-Math.pow(1-p,3);el.textContent=dec?(e*end).toFixed(dec):Math.floor(e*end);if(p<1)requestAnimationFrame(step);})(performance.now());}
 setTimeout(()=>{cnt('c1',87,0);cnt('c2',2.4,1);cnt('c3',50,0);cnt('c4',4.9,1);},400);
 </script>
@@ -4730,71 +4615,7 @@ def render_sidebar(config: Config) -> tuple[str, str, str, bool, bool]:
             </div>
         </div>
         """, unsafe_allow_html=True)
-            st.markdown('<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,210,255,0.2),transparent);margin:0 0 8px 0;"></div>', unsafe_allow_html=True)
-
-            # ── PRIMARY NAVIGATION (reliable Streamlit buttons) ──────────
-            cur = st.session_state.get('current_page', 'home')
-            st.markdown('<div style="font-family:\'JetBrains Mono\',monospace;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,210,255,0.35);margin-bottom:6px;padding:0 4px;">Navigation</div>', unsafe_allow_html=True)
-
-            NAV_ITEMS = [
-                ('home',      '🏠', 'Home'),
-                ('career',    '📊', 'Career Analysis'),
-                ('resume',    '📝', 'Resume Builder'),
-                ('interview', '🎤', 'Mock Interview'),
-                ('pyq',       '📂', 'PYQ Hub'),
-                ('resources', '📚', 'Resources'),
-                ('compare',   '⚖️',  'Compare'),
-                ('history',   '🕒', 'History'),
-            ]
-
-            # Inject nav button CSS once
-            st.markdown("""
-            <style>
-            [data-testid="stSidebar"] .nav-btn-wrap .stButton > button {
-                width: 100% !important;
-                text-align: left !important;
-                justify-content: flex-start !important;
-                background: transparent !important;
-                border: 1px solid transparent !important;
-                border-radius: 8px !important;
-                color: #64748b !important;
-                font-family: 'Space Grotesk', sans-serif !important;
-                font-size: 0.86rem !important;
-                font-weight: 500 !important;
-                padding: 9px 12px !important;
-                letter-spacing: 0 !important;
-                text-transform: none !important;
-                box-shadow: none !important;
-                margin-bottom: 2px !important;
-                transition: all 0.15s ease !important;
-            }
-            [data-testid="stSidebar"] .nav-btn-wrap .stButton > button:hover {
-                background: rgba(0,210,255,0.07) !important;
-                border-color: rgba(0,210,255,0.18) !important;
-                color: #e2e8f0 !important;
-                transform: none !important;
-            }
-            [data-testid="stSidebar"] .nav-btn-active .stButton > button {
-                background: rgba(0,210,255,0.11) !important;
-                border-color: rgba(0,210,255,0.3) !important;
-                color: #00d2ff !important;
-                font-weight: 600 !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-
-            for page_key, icon, label in NAV_ITEMS:
-                is_active = (cur == page_key)
-                wrap_class = "nav-btn-active" if is_active else "nav-btn-wrap"
-                st.markdown(
-                    f'<div class="{wrap_class}">', unsafe_allow_html=True)
-                if st.button(f"{icon}  {label}", key=f"nav_btn_{page_key}"):
-                    st.session_state['current_page'] = page_key
-                    st.query_params["page"] = page_key
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,210,255,0.2),transparent);margin:12px 0 16px 0;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,210,255,0.2),transparent);margin:0 0 16px 0;"></div>', unsafe_allow_html=True)
             st.markdown('<div style="font-family:JetBrains Mono,monospace;font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,210,255,0.4);margin-bottom:10px;">Settings</div>', unsafe_allow_html=True)
         else:
             lottie_brain = load_lottieurl(
@@ -6127,7 +5948,7 @@ def main():
     selected_provider, selected_model, analysis_depth, include_learning_path, include_interview_prep = \
         render_sidebar(config)
 
-    # ── PRE-API KEY: v5 editorial landing ─────────────────────────────────
+    # ── PRE-API KEY: v5 landing ───────────────────────────────────────────────────
     if not config.is_ready():
         components.html(_V5_LANDING_HTML, height=4400, scrolling=True)
         st.stop()

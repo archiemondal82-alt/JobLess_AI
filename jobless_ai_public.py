@@ -2918,178 +2918,197 @@ _AI_AVATAR_VOICE_HTML = """<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{background:#050a12;font-family:'DM Sans',sans-serif;overflow:hidden;height:100%}
-#root{display:flex;height:__HEIGHT__px;gap:0}
+html,body{background:#050a12;font-family:'DM Sans',sans-serif;overflow:hidden;height:100%;width:100%}
 
-/* ── LEFT: Avatar Panel ── */
-#avatarPanel{
-  flex:0 0 280px;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:20px;
-  background:linear-gradient(180deg,#060d1a 0%,#0a0f1a 100%);
-  border-right:1px solid rgba(0,210,255,.08);position:relative;overflow:hidden;
+/* ── MOBILE-FIRST: single column stack ── */
+#root{
+  display:flex;flex-direction:column;
+  height:__HEIGHT__px;width:100%;overflow:hidden;
 }
-#avatarPanel::before{
+
+/* TOP BAR: avatar + name + status inline */
+#topBar{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;flex-shrink:0;
+  background:linear-gradient(90deg,#060d1a,#0a0f1a);
+  border-bottom:1px solid rgba(0,210,255,.08);
+  position:relative;overflow:hidden;
+}
+#topBar::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 200px 200px at 50% 40%,rgba(168,85,247,.12),transparent);
+  background:radial-gradient(ellipse 120px 60px at 10% 50%,rgba(168,85,247,.10),transparent);
   pointer-events:none;
 }
-canvas#face{border-radius:50%;display:block;margin-bottom:14px;position:relative;z-index:2}
-.ai-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;color:#e2e8f0;letter-spacing:.04em;margin-bottom:3px;z-index:2;position:relative}
-.ai-title{font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(0,210,255,.5);z-index:2;position:relative}
-.ai-status{margin-top:12px;display:flex;align-items:center;gap:6px;z-index:2;position:relative}
-.status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e}
-.status-dot.speaking{background:#a855f7;box-shadow:0 0 12px #a855f7;animation:sdot 0.6s ease-in-out infinite}
-.status-dot.listening{background:#00d2ff;box-shadow:0 0 12px #00d2ff;animation:sdot 0.8s ease-in-out infinite}
+canvas#face{border-radius:50%;flex-shrink:0;display:block;position:relative;z-index:2}
+#avatarInfo{flex:1;min-width:0;z-index:2}
+.ai-name{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:800;color:#e2e8f0;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-title{font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,210,255,.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-status{display:flex;align-items:center;gap:5px;margin-top:5px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 7px #22c55e;flex-shrink:0}
+.status-dot.speaking{background:#a855f7;box-shadow:0 0 10px #a855f7;animation:sdot .6s ease-in-out infinite}
+.status-dot.listening{background:#00d2ff;box-shadow:0 0 10px #00d2ff;animation:sdot .8s ease-in-out infinite}
 @keyframes sdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
-.status-txt{font-family:'DM Mono',monospace;font-size:.58rem;color:#64748b;letter-spacing:.08em;text-transform:uppercase}
+.status-txt{font-family:'DM Mono',monospace;font-size:.52rem;color:#64748b;letter-spacing:.07em;text-transform:uppercase}
 
-/* ── CENTER: Conversation + Mic ── */
-#centerPanel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+/* WAVE bars (right side of top bar) */
+.wv{display:inline-flex;align-items:center;gap:2px;height:16px;flex-shrink:0}
+.wv-b{width:3px;border-radius:2px;background:#a855f7;opacity:.25;height:4px}
+.wv-b.on{opacity:.9;animation:wvb .5s ease-in-out infinite}
+.wv-b:nth-child(1){animation-delay:0s}
+.wv-b:nth-child(2){animation-delay:.07s;height:10px}
+.wv-b:nth-child(3){animation-delay:.13s;height:16px}
+.wv-b:nth-child(4){animation-delay:.17s;height:10px}
+.wv-b:nth-child(5){animation-delay:.21s;height:6px}
+@keyframes wvb{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.6)}}
 
-/* AI Speech bubble */
+/* AI SPEECH */
 #aiSpeech{
-  padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.05);
-  background:rgba(168,85,247,.05);flex:0 0 auto;min-height:90px;max-height:180px;overflow-y:auto;
+  padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.05);
+  background:rgba(168,85,247,.05);flex-shrink:0;
+  max-height:130px;overflow-y:auto;
 }
 #aiSpeech::-webkit-scrollbar{width:2px}
 #aiSpeech::-webkit-scrollbar-thumb{background:rgba(168,85,247,.3)}
-.ai-lbl{font-family:'DM Mono',monospace;font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(168,85,247,.5);margin-bottom:7px;display:flex;align-items:center;gap:6px}
-.wv{display:inline-flex;align-items:center;gap:2px;height:10px}
-.wv-b{width:2px;border-radius:2px;background:#a855f7;opacity:.3;height:3px}
-.wv-b.on{opacity:.9;animation:wvb .5s ease-in-out infinite}
-.wv-b:nth-child(1){animation-delay:0s}
-.wv-b:nth-child(2){animation-delay:.07s;height:7px}
-.wv-b:nth-child(3){animation-delay:.13s;height:10px}
-.wv-b:nth-child(4){animation-delay:.17s;height:7px}
-.wv-b:nth-child(5){animation-delay:.21s;height:4px}
-@keyframes wvb{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.7)}}
-#aiTxt{color:#e2e8f0;font-size:.88rem;line-height:1.65;white-space:pre-wrap}
+.ai-lbl{font-family:'DM Mono',monospace;font-size:.47rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(168,85,247,.5);margin-bottom:6px}
+#aiTxt{color:#e2e8f0;font-size:.85rem;line-height:1.6;white-space:pre-wrap}
 
-/* User transcript area */
+/* USER TRANSCRIPT */
 #userPanel{
-  flex:1;display:flex;flex-direction:column;padding:14px 20px 12px;
-  background:rgba(0,210,255,.03);overflow:hidden;
+  flex:1;display:flex;flex-direction:column;
+  padding:10px 14px 8px;background:rgba(0,210,255,.025);
+  overflow:hidden;min-height:0;
 }
-.user-lbl{font-family:'DM Mono',monospace;font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,210,255,.5);margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.live-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;opacity:0;flex-shrink:0}
+.user-lbl{
+  font-family:'DM Mono',monospace;font-size:.47rem;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(0,210,255,.5);
+  margin-bottom:6px;display:flex;align-items:center;gap:7px;flex-shrink:0;
+}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#ef4444;opacity:0;flex-shrink:0}
 .live-dot.on{opacity:1;animation:ldot 1s ease-in-out infinite}
 @keyframes ldot{0%,100%{opacity:1}50%{opacity:.2}}
 #transcript{
-  flex:1;font-size:.85rem;color:#64748b;line-height:1.65;
+  flex:1;font-size:.83rem;color:#64748b;line-height:1.6;
   font-style:italic;overflow-y:auto;cursor:text;
-  border:1px solid rgba(255,255,255,.06);border-radius:10px;
-  padding:10px 12px;background:rgba(255,255,255,.02);
-  min-height:60px;outline:none;
+  border:1px solid rgba(255,255,255,.07);border-radius:10px;
+  padding:9px 11px;background:rgba(255,255,255,.02);
+  min-height:44px;outline:none;
+  -webkit-user-select:text;user-select:text;
 }
 #transcript.has{color:#e2e8f0;font-style:normal}
 #transcript::-webkit-scrollbar{width:2px}
-#transcript::-webkit-scrollbar-thumb{background:rgba(0,210,255,.2)}
-#transcript[contenteditable="true"]:focus{border-color:rgba(0,210,255,.25);box-shadow:0 0 0 2px rgba(0,210,255,.06)}
-.no-speech-warn{font-size:.75rem;color:#f59e0b;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 12px;text-align:center}
+#transcript[contenteditable="true"]:focus{border-color:rgba(0,210,255,.3);box-shadow:0 0 0 2px rgba(0,210,255,.07)}
+.no-speech-warn{font-size:.72rem;color:#f59e0b;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:7px 11px;text-align:center}
 
-/* Buttons row */
-#btns{display:flex;gap:8px;padding:12px 20px;border-top:1px solid rgba(255,255,255,.05);flex-shrink:0;align-items:center}
+/* BUTTONS — two rows on mobile */
+#btns{
+  display:grid;
+  grid-template-columns:52px 1fr 1fr;
+  gap:7px;
+  padding:8px 14px 10px;
+  border-top:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;
+}
 .mic-btn{
-  width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#00d2ff,#0ea8d8);
-  border:none;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;
-  transition:all .2s;box-shadow:0 0 18px rgba(0,210,255,.35);flex-shrink:0
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#00d2ff,#0ea8d8);
+  border:none;cursor:pointer;font-size:1.3rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;box-shadow:0 0 16px rgba(0,210,255,.35);
+  touch-action:manipulation;grid-row:1/3;align-self:center;
 }
-.mic-btn:hover{transform:scale(1.08);box-shadow:0 0 28px rgba(0,210,255,.55)}
-.mic-btn.listening{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 0 18px rgba(239,68,68,.5);animation:micpulse .8s ease-in-out infinite}
-@keyframes micpulse{0%,100%{box-shadow:0 0 18px rgba(239,68,68,.5)}50%{box-shadow:0 0 35px rgba(239,68,68,.8)}}
-.submit-btn{
-  flex:1;height:46px;border-radius:12px;
-  background:linear-gradient(135deg,rgba(168,85,247,.25),rgba(0,210,255,.15));
-  border:1.5px solid rgba(168,85,247,.4);color:#e2e8f0;
-  font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;
-  cursor:pointer;letter-spacing:.04em;transition:all .2s;
+.mic-btn.listening{
+  background:linear-gradient(135deg,#ef4444,#dc2626);
+  box-shadow:0 0 18px rgba(239,68,68,.55);
+  animation:micpulse .8s ease-in-out infinite;
 }
-.submit-btn:hover{background:linear-gradient(135deg,rgba(168,85,247,.4),rgba(0,210,255,.25));border-color:rgba(168,85,247,.7);transform:translateY(-1px)}
-.submit-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
-.clear-btn{
-  height:46px;padding:0 16px;border-radius:12px;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
-  color:#64748b;font-family:'DM Mono',monospace;font-size:.58rem;
-  cursor:pointer;letter-spacing:.05em;transition:all .2s;
+@keyframes micpulse{0%,100%{box-shadow:0 0 18px rgba(239,68,68,.5)}50%{box-shadow:0 0 32px rgba(239,68,68,.8)}}
+.action-btn{
+  height:44px;border-radius:11px;border:1.5px solid;
+  font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;
+  cursor:pointer;letter-spacing:.03em;transition:all .2s;
+  touch-action:manipulation;display:flex;align-items:center;
+  justify-content:center;gap:5px;padding:0 8px;
 }
-.clear-btn:hover{color:#e2e8f0;border-color:rgba(255,255,255,.2)}
+.action-btn:disabled{opacity:.35;cursor:not-allowed}
+#submitBtn{
+  background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(0,210,255,.12));
+  border-color:rgba(168,85,247,.45);color:#e2e8f0;
+}
+#submitBtn:active{transform:scale(.97)}
+#clearBtn{
+  background:rgba(255,255,255,.04);
+  border-color:rgba(255,255,255,.12);color:#64748b;
+  font-family:'DM Mono',monospace;font-size:.6rem;
+}
+#clearBtn:active{color:#e2e8f0}
 
-/* ── RIGHT: History panel ── */
-#historyPanel{
-  flex:0 0 200px;display:flex;flex-direction:column;
-  border-left:1px solid rgba(255,255,255,.05);
-  background:rgba(0,0,0,.2);overflow:hidden;
+/* DESKTOP: side-by-side layout at ≥560px */
+@media(min-width:560px){
+  #root{flex-direction:row}
+  #topBar{
+    flex:0 0 220px;flex-direction:column;align-items:center;justify-content:center;
+    border-bottom:none;border-right:1px solid rgba(0,210,255,.08);
+    padding:20px 16px;
+  }
+  canvas#face{margin-bottom:10px}
+  .ai-name{text-align:center;font-size:.92rem}
+  .ai-title{text-align:center}
+  .ai-status{justify-content:center;margin-top:8px}
+  .wv{display:none}
+  #mainCol{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+  #btns{grid-template-columns:52px 1fr 1fr}
 }
-.hist-hdr{padding:14px 14px 8px;font-family:'DM Mono',monospace;font-size:.5rem;
-  letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.2);flex-shrink:0}
-#histList{flex:1;overflow-y:auto;padding:0 10px 10px}
-#histList::-webkit-scrollbar{width:2px}
-#histList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1)}
-.hist-item{padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:.72rem;line-height:1.5;cursor:default}
-.hist-item.ai{background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.15);color:#94a3b8}
-.hist-item.user{background:rgba(0,210,255,.06);border:1px solid rgba(0,210,255,.12);color:#94a3b8;text-align:right}
-.hist-item .hist-speaker{font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
-.hist-item.ai .hist-speaker{color:rgba(168,85,247,.6)}
-.hist-item.user .hist-speaker{color:rgba(0,210,255,.6)}
 </style>
 </head>
 <body>
 <div id="root">
 
-  <!-- AVATAR -->
-  <div id="avatarPanel">
-    <canvas id="face" width="140" height="140"></canvas>
-    <div class="ai-name">__INTERVIEWER_NAME__</div>
-    <div class="ai-title">Senior Interviewer · __COMPANY__</div>
-    <div class="ai-status">
-      <div class="status-dot" id="statusDot"></div>
-      <div class="status-txt" id="statusTxt">Ready</div>
+  <!-- TOP BAR (mobile) / LEFT PANEL (desktop) -->
+  <div id="topBar">
+    <canvas id="face" width="64" height="64"></canvas>
+    <div id="avatarInfo">
+      <div class="ai-name">__INTERVIEWER_NAME__</div>
+      <div class="ai-title">Senior Interviewer · __COMPANY__</div>
+      <div class="ai-status">
+        <div class="status-dot" id="statusDot"></div>
+        <div class="status-txt" id="statusTxt">Ready</div>
+      </div>
+    </div>
+    <div class="wv" id="wv">
+      <div class="wv-b"></div><div class="wv-b"></div>
+      <div class="wv-b"></div><div class="wv-b"></div>
+      <div class="wv-b"></div>
     </div>
   </div>
 
-  <!-- CENTER -->
-  <div id="centerPanel">
+  <!-- MAIN COLUMN -->
+  <div id="mainCol">
+    <!-- AI speech -->
     <div id="aiSpeech">
-      <div class="ai-lbl">
-        AI Interviewer
-        <div class="wv" id="wv">
-          <div class="wv-b"></div><div class="wv-b"></div>
-          <div class="wv-b"></div><div class="wv-b"></div>
-          <div class="wv-b"></div>
-        </div>
-      </div>
+      <div class="ai-lbl">AI Interviewer</div>
       <div id="aiTxt">__AI_MESSAGE__</div>
     </div>
 
+    <!-- User transcript -->
     <div id="userPanel">
       <div class="user-lbl">
         <div class="live-dot" id="liveDot"></div>
         Your Answer
-        <span style="margin-left:auto;font-size:.5rem;color:#334155;letter-spacing:.05em">speak or type below</span>
+        <span style="margin-left:auto;font-size:.45rem;color:#334155">speak or type</span>
       </div>
       <div id="transcript" contenteditable="true">__PLACEHOLDER__</div>
     </div>
 
+    <!-- Buttons -->
     <div id="btns">
-      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Click to speak">🎤</button>
-      <button class="clear-btn" onclick="clearTranscript()">Clear</button>
-      <button class="submit-btn" id="submitBtn" onclick="submitAnswer('answer')">
-        ✅ Submit Answer
-      </button>
-      <button class="submit-btn" id="wrapBtn" onclick="submitAnswer('wrapup')"
-              style="background:linear-gradient(135deg,rgba(34,197,94,0.25),rgba(0,210,255,0.15));border-color:rgba(34,197,94,0.5);flex:0 0 auto;padding:0 14px;font-size:.72rem;">
-        🏁 Wrap Up
-      </button>
+      <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Tap to speak">🎤</button>
+      <button class="action-btn" id="submitBtn" onclick="submitAnswer('answer')">✅ Submit</button>
+      <button class="action-btn" id="clearBtn" onclick="clearTranscript()">✕ Clear</button>
     </div>
-  </div>
-
-  <!-- HISTORY -->
-  <div id="historyPanel">
-    <div class="hist-hdr">▸ Conversation</div>
-    <div id="histList">__HISTORY_HTML__</div>
   </div>
 
 </div>
@@ -3106,7 +3125,11 @@ var synth = window.speechSynthesis;
 // ── CANVAS AVATAR ────────────────────────────────────────────────────
 var canvas = document.getElementById('face');
 var ctx    = canvas.getContext('2d');
-var W = 140, H = 140, CX = W/2, CY = H/2;
+// Responsive canvas size
+var isMobile = window.innerWidth < 560;
+var CSIZE = isMobile ? 64 : 100;
+canvas.width = CSIZE; canvas.height = CSIZE;
+var W = CSIZE, H = CSIZE, CX = W/2, CY = H/2;
 var mouthAnim = 0, breathe = 0, glowR = 52;
 
 function drawAvatar(speaking) {
@@ -3115,8 +3138,11 @@ function drawAvatar(speaking) {
   if (speaking) mouthAnim = Math.sin(Date.now() * 0.012) * 0.5 + 0.5;
   else mouthAnim *= 0.88;
 
+  var scale = W / 140;  // scale factor relative to original 140px design
+  var baseR = 52 * scale;
+
   // Outer glow ring
-  var glow = 52 + Math.sin(breathe) * 4;
+  var glow = baseR + Math.sin(breathe) * 4 * scale;
   var grad = ctx.createRadialGradient(CX,CY,glow*0.4,CX,CY,glow*1.1);
   grad.addColorStop(0, speaking ? 'rgba(168,85,247,0.0)' : 'rgba(0,210,255,0.0)');
   grad.addColorStop(0.6, speaking ? 'rgba(168,85,247,0.10)' : 'rgba(0,210,255,0.06)');
@@ -3125,7 +3151,7 @@ function drawAvatar(speaking) {
   ctx.fillStyle=grad; ctx.fill();
 
   // Face circle
-  var faceGrad = ctx.createRadialGradient(CX-12,CY-14,8,CX,CY,glow);
+  var faceGrad = ctx.createRadialGradient(CX-12*scale,CY-14*scale,8*scale,CX,CY,glow);
   faceGrad.addColorStop(0, speaking ? '#2d1a4a' : '#0d2035');
   faceGrad.addColorStop(0.6, speaking ? '#1a0f2e' : '#071525');
   faceGrad.addColorStop(1, '#050a12');
@@ -3138,61 +3164,57 @@ function drawAvatar(speaking) {
   ringGrad.addColorStop(0.5, speaking ? 'rgba(0,210,255,0.4)' : 'rgba(168,85,247,0.3)');
   ringGrad.addColorStop(1, speaking ? 'rgba(168,85,247,0.8)' : 'rgba(0,210,255,0.6)');
   ctx.beginPath(); ctx.arc(CX,CY,glow,0,Math.PI*2);
-  ctx.strokeStyle=ringGrad; ctx.lineWidth = speaking ? 2.5 : 1.5; ctx.stroke();
+  ctx.strokeStyle=ringGrad; ctx.lineWidth = speaking ? 2.5*scale : 1.5*scale; ctx.stroke();
 
   // Eyes
-  var eyeY = CY - 10, eyeOffX = 14;
+  var eyeY = CY - 10*scale, eyeOffX = 14*scale, eyeR = 7*scale;
   var eyeColor = speaking ? 'rgba(168,85,247,0.9)' : 'rgba(0,210,255,0.85)';
   [CX-eyeOffX, CX+eyeOffX].forEach(function(ex){
-    var eyeGrad = ctx.createRadialGradient(ex,eyeY,0,ex,eyeY,7);
+    var eyeGrad = ctx.createRadialGradient(ex,eyeY,0,ex,eyeY,eyeR);
     eyeGrad.addColorStop(0,'rgba(255,255,255,0.9)');
     eyeGrad.addColorStop(0.4, eyeColor);
     eyeGrad.addColorStop(1,'transparent');
-    ctx.beginPath(); ctx.arc(ex,eyeY,7,0,Math.PI*2);
+    ctx.beginPath(); ctx.arc(ex,eyeY,eyeR,0,Math.PI*2);
     ctx.fillStyle=eyeGrad; ctx.fill();
-    // Pupil
-    ctx.beginPath(); ctx.arc(ex,eyeY,2.5,0,Math.PI*2);
+    ctx.beginPath(); ctx.arc(ex,eyeY,2.5*scale,0,Math.PI*2);
     ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.fill();
   });
 
-  // Blink occasionally
+  // Blink
   if(Math.sin(Date.now()*0.0008)*Math.sin(Date.now()*0.0003) > 0.99){
-    ctx.beginPath(); ctx.arc(CX-eyeOffX,eyeY,7,0,Math.PI*2);
-    ctx.fillStyle='#050a12'; ctx.fill();
-    ctx.beginPath(); ctx.arc(CX+eyeOffX,eyeY,7,0,Math.PI*2);
-    ctx.fillStyle='#050a12'; ctx.fill();
+    [CX-eyeOffX, CX+eyeOffX].forEach(function(ex){
+      ctx.beginPath(); ctx.arc(ex,eyeY,eyeR,0,Math.PI*2);
+      ctx.fillStyle='#050a12'; ctx.fill();
+    });
   }
 
   // Mouth
-  var mouthY = CY + 14;
-  var openH  = mouthAnim * 10;
+  var mouthY = CY + 14*scale;
+  var openH  = mouthAnim * 10*scale;
   ctx.save();
   if (openH > 1) {
-    // Open mouth (speaking)
-    var mouthGrad = ctx.createLinearGradient(CX-12,mouthY-openH/2,CX+12,mouthY+openH/2);
+    var mouthGrad = ctx.createLinearGradient(CX-12*scale,mouthY-openH/2,CX+12*scale,mouthY+openH/2);
     mouthGrad.addColorStop(0,'rgba(168,85,247,0.8)');
     mouthGrad.addColorStop(1,'rgba(0,210,255,0.6)');
     ctx.beginPath();
-    ctx.ellipse(CX, mouthY, 12, openH/2+1, 0, 0, Math.PI*2);
+    ctx.ellipse(CX, mouthY, 12*scale, openH/2+1, 0, 0, Math.PI*2);
     ctx.fillStyle = 'rgba(5,10,18,0.9)'; ctx.fill();
-    ctx.strokeStyle = mouthGrad; ctx.lineWidth=1.5; ctx.stroke();
-    // Teeth hint
-    ctx.beginPath(); ctx.ellipse(CX,mouthY-openH/4,9,openH/4,0,0,Math.PI);
+    ctx.strokeStyle = mouthGrad; ctx.lineWidth=1.5*scale; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(CX,mouthY-openH/4,9*scale,openH/4,0,0,Math.PI);
     ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fill();
   } else {
-    // Closed smile
     ctx.beginPath();
-    ctx.moveTo(CX-10, mouthY);
-    ctx.quadraticCurveTo(CX, mouthY+6, CX+10, mouthY);
+    ctx.moveTo(CX-10*scale, mouthY);
+    ctx.quadraticCurveTo(CX, mouthY+6*scale, CX+10*scale, mouthY);
     ctx.strokeStyle = speaking ? 'rgba(168,85,247,0.7)' : 'rgba(0,210,255,0.6)';
-    ctx.lineWidth=2; ctx.lineCap='round'; ctx.stroke();
+    ctx.lineWidth=2*scale; ctx.lineCap='round'; ctx.stroke();
   }
   ctx.restore();
 
   // Subtle scan line
   var scanY = (Date.now()*0.04) % H;
   ctx.beginPath(); ctx.moveTo(CX-glow,scanY); ctx.lineTo(CX+glow,scanY);
-  ctx.strokeStyle='rgba(0,210,255,0.03)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle='rgba(0,210,255,0.03)'; ctx.lineWidth=2*scale; ctx.stroke();
 }
 
 // Animation loop
@@ -3354,33 +3376,14 @@ speakText(AI_MSG);
 
 
 def _build_avatar_voice_html(ai_message: str, history: list, interviewer_name: str,
-                              company: str, height: int = 440) -> str:
-    """Build the AI avatar voice HTML with current AI message + conversation history."""
+                              company: str, height: int = 380) -> str:
+    """Build the AI avatar voice HTML with current AI message injected."""
     import json
     import html as _html
 
-    # Escape AI message for HTML display and JS
     ai_msg_html = _html.escape(ai_message).replace('\n', '<br>')
     ai_msg_js   = json.dumps(ai_message)
-
-    # Build history HTML (right panel)
-    history_html = ""
-    for msg in history:
-        role_ = msg["role"]
-        content = msg["content"][:120] + ("..." if len(msg["content"]) > 120 else "")
-        speaker = "AI" if role_ == "assistant" else "You"
-        cls = "ai" if role_ == "assistant" else "user"
-        history_html += (
-            f'<div class="hist-item {cls}">'
-            f'<div class="hist-speaker">{speaker}</div>'
-            f'{_html.escape(content)}'
-            f'</div>'
-        )
-
-    # Build JS history array (for speaking if needed)
-    history_js = json.dumps([
-        {"role": m["role"], "content": m["content"]} for m in history
-    ])
+    history_js  = json.dumps([{"role": m["role"], "content": m["content"]} for m in history])
 
     out = _AI_AVATAR_VOICE_HTML
     out = out.replace("__HEIGHT__", str(height))
@@ -3388,9 +3391,8 @@ def _build_avatar_voice_html(ai_message: str, history: list, interviewer_name: s
     out = out.replace("__COMPANY__", _html.escape(company))
     out = out.replace("__AI_MESSAGE__", ai_msg_html)
     out = out.replace("__AI_MSG_JS__", ai_msg_js)
-    out = out.replace("__HISTORY_HTML__", history_html)
     out = out.replace("__HISTORY_JS__", history_js)
-    out = out.replace("__PLACEHOLDER__", "Speak or type your answer...")
+    out = out.replace("__PLACEHOLDER__", "Tap 🎤 to speak, or type here...")
     return out
 
 
@@ -3664,9 +3666,9 @@ def _render_conversational_interview(ai_handler, selected_model: str):
         history=messages,
         interviewer_name=interviewer_name,
         company=interviewer_co,
-        height=440,
+        height=380,
     )
-    _cmp.html(avatar_html, height=450, scrolling=False)
+    _cmp.html(avatar_html, height=390, scrolling=False)
 
     # ── Always-visible action bar below avatar ───────────────────────────
     # This stays persistent across reruns — user can ALWAYS get their review

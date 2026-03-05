@@ -5784,6 +5784,19 @@ html, body { background: #060606 !important; background-color: #060606 !importan
   padding: 4px 2px 10px 2px;
 }
 
+/* ── Mobile: switch to 2-column grid ── */
+@media (max-width: 480px) {
+  html, body { overflow-x: hidden !important; }
+  .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    padding: 4px 0 10px 0 !important;
+  }
+  .card { padding: 12px 10px 10px 10px !important; }
+  .card-title { font-size: 0.75rem !important; }
+  .card-desc { font-size: 0.65rem !important; }
+}
+
 /* ── Spotlight card ── */
 .card {
   --x: 0; --y: 0; --xp: 0; --yp: 0;
@@ -6011,7 +6024,7 @@ document.addEventListener('mousemove', function(e) {
 </script>
 </body>
 </html>"""
-        components.html(cards_html, height=300, scrolling=False)
+        components.html(cards_html, height=380, scrolling=False)
 
     # Section pages — render directly below the compact robot
     if page != 'home':

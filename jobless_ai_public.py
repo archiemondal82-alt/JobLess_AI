@@ -5795,7 +5795,7 @@ def main():
         page_title="JobLess AI",
         page_icon="🚀",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="auto",
     )
 
     init_session_state()
@@ -5828,8 +5828,80 @@ def main():
             height=500
         )
         ui.show_api_setup_banner()
-        st.info(
-            "👈 **Next Step:** Enter your API key in the sidebar to start analyzing careers!")
+
+        # ── Mobile-friendly inline API key setup ──────────────────────────
+        # On mobile, sidebar is collapsed by default — users need this on the main page
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(0,71,255,0.10),rgba(255,255,255,0.04));
+                    border:1px solid rgba(0,71,255,0.25);border-radius:18px;
+                    padding:24px 22px;margin:8px 0 20px 0;">
+            <div style="font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.2em;
+                        text-transform:uppercase;color:rgba(0,71,255,0.6);margin-bottom:10px;">
+                ⚡ Quick Setup — Free &amp; No Credit Card
+            </div>
+            <div style="color:#FAFAF7;font-size:1rem;font-weight:700;margin-bottom:6px;">
+                Connect a Free AI Provider
+            </div>
+            <div style="color:#7a7a7a;font-size:0.82rem;margin-bottom:20px;line-height:1.6;">
+                Get a free API key in 2 minutes — no billing, no credit card.
+                Works on desktop and mobile.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                   style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                          background:rgba(66,133,244,0.10);border:1px solid rgba(66,133,244,0.30);
+                          border-radius:12px;text-decoration:none;">
+                    <span style="font-size:1.2rem;">🔵</span>
+                    <div>
+                        <div style="color:#FAFAF7;font-weight:600;font-size:0.88rem;">Google Gemini</div>
+                        <div style="color:#7a7a7a;font-size:0.75rem;">Free forever · 15 req/min · No card needed</div>
+                    </div>
+                    <span style="margin-left:auto;color:rgba(66,133,244,0.8);font-size:0.75rem;
+                                 font-family:'Space Mono',monospace;">Get Key →</span>
+                </a>
+                <a href="https://console.groq.com/keys" target="_blank"
+                   style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                          background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);
+                          border-radius:12px;text-decoration:none;">
+                    <span style="font-size:1.2rem;">⚡</span>
+                    <div>
+                        <div style="color:#FAFAF7;font-weight:600;font-size:0.88rem;">Groq (Ultra-fast)</div>
+                        <div style="color:#7a7a7a;font-size:0.75rem;">Free forever · Fastest inference · No card</div>
+                    </div>
+                    <span style="margin-left:auto;color:rgba(245,158,11,0.8);font-size:0.75rem;
+                                 font-family:'Space Mono',monospace;">Get Key →</span>
+                </a>
+            </div>
+            <div style="color:rgba(255,255,255,0.35);font-size:0.75rem;text-align:center;
+                        font-family:'Space Mono',monospace;">
+                📱 On mobile? Tap the ☰ menu (top-left) → open Settings → paste your key
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Inline key entry (works on mobile without opening sidebar)
+        with st.expander("🔑 Paste your API key here to unlock all features", expanded=True):
+            _inline_provider = st.selectbox(
+                "Provider", options=list(PROVIDER_MODELS.keys()),
+                format_func=lambda p: {"Google Gemini  🆓": "🔵 Google Gemini (Free)",
+                                       "Groq  🆓⚡": "⚡ Groq (Free · Ultra-fast)",
+                                       "Cohere  🆓": "🌊 Cohere (Free)"}.get(p, p),
+                key="inline_provider_select", label_visibility="collapsed"
+            )
+            _inline_key = st.text_input(
+                "API Key", type="password",
+                placeholder="Paste your free API key here...",
+                key="inline_api_key_input", label_visibility="collapsed"
+            )
+            if st.button("🚀 Unlock JobLess AI", use_container_width=True, type="primary",
+                         key="inline_save_key"):
+                if _inline_key.strip():
+                    config.set_provider(_inline_provider)
+                    config.set_api_key(_inline_key.strip(), _inline_provider)
+                    st.success("✅ Key saved! Loading your dashboard...")
+                    st.rerun()
+                else:
+                    st.error("⚠️ Please paste your API key first.")
         st.stop()
 
     # ── POST-API KEY: full dashboard ───────────────────────────────────────

@@ -23,7 +23,7 @@ import io as _io
 import datetime
 import streamlit as st
 import streamlit.components.v1 as components
-import pdfplumber
+import fitz  # PyMuPDF
 import json
 import pandas as pd
 import altair as alt
@@ -1624,16 +1624,16 @@ class PDFHandler:
                 return ""
 
             text = ""
-            with pdfplumber.open(io.BytesIO(pdf_bytes)) as doc:
+            with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
 
                 # 🛡️ Block suspiciously large PDFs
-                if len(doc.pages) > 15:
+                if len(doc) > 15:
                     st.error(
                         "⚠️ Too many pages. Resume should be under 15 pages.")
                     return ""
 
-                for page in doc.pages:
-                    text += page.extract_text() or ""
+                for page in doc:
+                    text += page.get_text()
             return text.strip()
         except Exception as e:
             st.error(f"PDF extraction error: {e}")
@@ -6247,9 +6247,3 @@ document.addEventListener('mousemove', function(e) {
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-    

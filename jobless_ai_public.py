@@ -2272,6 +2272,21 @@ html,body{background:#050a12!important;overflow:hidden;font-family:'DM Sans',san
 .pyq-name{font-size:.7rem;font-weight:600;color:#FAFAF7;font-family:'Syne',sans-serif;margin-bottom:2px}
 .pyq-meta{font-size:.57rem;color:rgba(255,255,255,.3);font-family:'DM Mono',monospace}
 .pyq-count{background:rgba(0,71,255,.1);border:1px solid rgba(0,71,255,.2);border-radius:6px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:.58rem;color:#0047FF;flex-shrink:0}
+
+/* ── Mobile: hide decorative right panel, let left take full width ── */
+@media (max-width: 520px) {
+  .wrap { height: auto !important; min-height: 320px; }
+  .R { display: none !important; }
+  .L { flex: 1 1 100% !important; border-right: none !important; padding: 18px 16px 16px 16px !important; }
+  .ltitle { font-size: 1.15rem !important; }
+  .prow { gap: 6px !important; padding: 7px 8px !important; }
+  .pbadge { font-size: .58rem !important; padding: 2px 6px !important; }
+  .pname { font-size: .66rem !important; }
+  .pdesc { font-size: .55rem !important; }
+  .plink { font-size: .6rem !important; white-space: nowrap; }
+  .lpill { padding: 6px 10px !important; }
+  .lpill-txt { font-size: .6rem !important; }
+}
 </style>
 </head>
 <body>
@@ -2405,7 +2420,7 @@ anim(0);schedNext();
 document.addEventListener('mousemove',function(e){var rect=window.frameElement?window.frameElement.getBoundingClientRect():{left:0,top:0};window.parent.postMessage({type:'ns-move',x:e.clientX+rect.left,y:e.clientY+rect.top},'*');},{passive:true});
 </script>
 </body>
-</html>""", height=360, scrolling=False)
+</html>""", height=380, scrolling=False)
 
 
 # ==================== GLOBAL BACKGROUND ====================

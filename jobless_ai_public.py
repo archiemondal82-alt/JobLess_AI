@@ -2603,6 +2603,23 @@ def _render_career_results(data: Dict):
         return
 
     st.markdown("### 🎯 Recommended Career Paths")
+
+    # ── Sort control ────────────────────────────────────────────────────────
+    sort_col, _ = st.columns([2, 3])
+    with sort_col:
+        sort_order = st.radio(
+            "Sort by match score",
+            ["↓ Highest First", "↑ Lowest First"],
+            horizontal=True,
+            key="career_sort_order",
+            label_visibility="collapsed",
+        )
+    if sort_order.startswith("↓"):
+        careers = sorted(careers, key=lambda c: c.get('match_score', 0), reverse=True)
+    else:
+        careers = sorted(careers, key=lambda c: c.get('match_score', 0))
+    # ────────────────────────────────────────────────────────────────────────
+
     for idx, job in enumerate(careers, 1):
         score = job.get('match_score', 0)
         keywords = job.get('job_search_keywords', job['title'])
@@ -5952,7 +5969,7 @@ html, body { background: #060606 !important; background-color: #060606 !importan
 
 /* ── Mobile: switch to 2-column grid ── */
 @media (max-width: 480px) {
-  html, body { overflow-x: hidden !important; }
+  html, body { overflow-x: hidden !important; overflow-y: auto !important; }
   .grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
@@ -5961,6 +5978,8 @@ html, body { background: #060606 !important; background-color: #060606 !importan
   .card { padding: 12px 10px 10px 10px !important; }
   .card-title { font-size: 0.75rem !important; }
   .card-desc { font-size: 0.65rem !important; }
+  /* on small screens the grid is 3 rows — ensure body can expand */
+  body { min-height: 500px !important; }
 }
 
 /* ── Spotlight card ── */
@@ -6210,7 +6229,7 @@ document.addEventListener('mousemove', function(e) {
             ("##COMPARE##",   "compare",     "#0047FF"),
         ]:
             cards_html = cards_html.replace(_tok, _svg(_key, 22, _col))
-        components.html(cards_html, height=380, scrolling=False)
+        components.html(cards_html, height=480, scrolling=False)
 
     # Section pages — render directly below the compact robot
     if page != 'home':

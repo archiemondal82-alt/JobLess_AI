@@ -1863,6 +1863,16 @@ class UIComponents:
             }
             .result-card:hover::after { opacity: 1; }
         
+            /* ── Ghost nav buttons: hide the entire bottom block container.
+               These buttons are only used as JS click targets; they must
+               never be visible or take up layout space. ── */
+            [data-testid="stBottomBlockContainer"] {
+                display: none !important;
+                visibility: hidden !important;
+                height: 0 !important;
+                overflow: hidden !important;
+            }
+
             /* Buttons */
             .stButton > button {
                 font-family: 'Inter', sans-serif !important;

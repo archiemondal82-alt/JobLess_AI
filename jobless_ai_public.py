@@ -191,6 +191,28 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           letter-spacing: -0.02em;
           margin-bottom: 16px;
         }}
+
+        /* Gooey text morphing */
+        .gooey-container {{
+          position: relative;
+          height: 3.2rem;
+          margin-bottom: 16px;
+          filter: url(#gooey-threshold);
+        }}
+        .gooey-text {{
+          position: absolute;
+          left: 0;
+          top: 0;
+          display: inline-block;
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 2.6rem;
+          font-weight: 700;
+          color: #ffffff;
+          line-height: 1.1;
+          letter-spacing: -0.02em;
+          white-space: nowrap;
+          user-select: none;
+        }}
         .left-panel p {{
           color: #999999;
           font-family: 'Inter', sans-serif;
@@ -274,6 +296,8 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         @media (min-width: 601px) and (max-width: 900px) {{
           .left-panel {{ flex: 0 0 38%; padding: 16px 20px; }}
           .left-panel h1 {{ font-size: 1.6rem; }}
+          .gooey-container {{ height: 2rem; }}
+          .gooey-text {{ font-size: 1.6rem; }}
         }}
       </style>
     </head>
@@ -284,7 +308,17 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         <!-- Left content -->
         <div class="left-panel">
           <div class="label">AI-Powered Career Intelligence</div>
-          <h1>{title}</h1>
+          <svg style="position:absolute;width:0;height:0" aria-hidden="true">
+            <defs>
+              <filter id="gooey-threshold">
+                <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 255 -140" />
+              </filter>
+            </defs>
+          </svg>
+          <div class="gooey-container">
+            <span class="gooey-text" id="gText1"></span>
+            <span class="gooey-text" id="gText2"></span>
+          </div>
           <p>{description}</p>
           <div class="btn" id="getStartedBtn">Get Started →</div>
         </div>
@@ -403,6 +437,72 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
       }})();
       </script>
 
+      <!-- Gooey Text Morphing Animation -->
+      <script>
+      (function() {{
+        var texts = ["{title}", "Career Intel", "Your Future", "AI Powered"];
+        var morphTime = 1;
+        var cooldownTime = 0.25;
+        var textIndex = texts.length - 1;
+        var time = new Date();
+        var morph = 0;
+        var cooldown = cooldownTime;
+        var text1 = document.getElementById('gText1');
+        var text2 = document.getElementById('gText2');
+        if (!text1 || !text2) return;
+
+        text1.textContent = texts[textIndex % texts.length];
+        text2.textContent = texts[(textIndex + 1) % texts.length];
+
+        function setMorph(fraction) {{
+          text2.style.filter = 'blur(' + Math.min(8 / fraction - 8, 100) + 'px)';
+          text2.style.opacity = (Math.pow(fraction, 0.4) * 100) + '%';
+          var f2 = 1 - fraction;
+          text1.style.filter = 'blur(' + Math.min(8 / f2 - 8, 100) + 'px)';
+          text1.style.opacity = (Math.pow(f2, 0.4) * 100) + '%';
+        }}
+
+        function doCooldown() {{
+          morph = 0;
+          text2.style.filter = '';
+          text2.style.opacity = '100%';
+          text1.style.filter = '';
+          text1.style.opacity = '0%';
+        }}
+
+        function doMorph() {{
+          morph -= cooldown;
+          cooldown = 0;
+          var fraction = morph / morphTime;
+          if (fraction > 1) {{
+            cooldown = cooldownTime;
+            fraction = 1;
+          }}
+          setMorph(fraction);
+        }}
+
+        function animate() {{
+          requestAnimationFrame(animate);
+          var newTime = new Date();
+          var shouldIncrementIndex = cooldown > 0;
+          var dt = (newTime.getTime() - time.getTime()) / 1000;
+          time = newTime;
+          cooldown -= dt;
+          if (cooldown <= 0) {{
+            if (shouldIncrementIndex) {{
+              textIndex = (textIndex + 1) % texts.length;
+              text1.textContent = texts[textIndex % texts.length];
+              text2.textContent = texts[(textIndex + 1) % texts.length];
+            }}
+            doMorph();
+          }} else {{
+            doCooldown();
+          }}
+        }}
+        animate();
+      }})();
+      </script>
+
       <!-- WebGL Shader Background Logic -->
       <script>
       (function() {{
@@ -428,10 +528,10 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
                 uv+=.1*cos(i*vec2(.1+.01*i, .8)+i*i+T*.5+.1*uv.x);
                 vec2 p=uv;
                 float d=length(p);
-                col+=.00125/d*(cos(sin(i)*vec3(0.15,0.45,0.95))+1.);
+                col+=.00125/d*(cos(sin(i)*vec3(0.5,0.5,0.5))+1.);
                 float b=noise(i+p+bg*1.731);
                 col+=.002*b/length(max(p,vec2(b*p.x*.02,p.y)));
-                col=mix(col,vec3(bg*.04,bg*.12,bg*.28),d);
+                col=mix(col,vec3(bg*.08,bg*.08,bg*.08),d);
             }}
             O=vec4(col,1);
         }}`; 

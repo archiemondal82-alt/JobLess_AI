@@ -104,7 +104,7 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-      <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
       <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         html, body {{ background: #0a0f1a !important; background-color: #0a0f1a !important; overflow: hidden; cursor: none !important; }}
@@ -155,15 +155,21 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           justify-content: center;
         }}
         .label {{
-          font-family: 'Inter', sans-serif;
-          font-size: 0.7rem;
-          letter-spacing: 0.18em;
+          font-family: 'Space Mono', monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.2em;
           text-transform: uppercase;
-          color: rgba(0, 210, 255, 0.55);
-          margin-bottom: 18px;
+          color: rgba(0,180,255,0.55);
+          margin-bottom: 20px;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
+          background: rgba(0,71,255,0.08);
+          border: 1px solid rgba(0,71,255,0.2);
+          padding: 6px 14px;
+          border-radius: 50px;
+          backdrop-filter: blur(12px);
+          width: fit-content;
         }}
         .label::before {{
           content: '';
@@ -171,25 +177,27 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           width: 6px; height: 6px;
           border-radius: 50%;
           background: #0047FF;
-          box-shadow: 0 0 8px #0047FF;
+          box-shadow: 0 0 10px #0047FF, 0 0 20px rgba(0,71,255,0.5);
           animation: pulse 2s ease-in-out infinite;
+          flex-shrink: 0;
         }}
-        @keyframes pulse {{ 0%,100%{{opacity:1}} 50%{{opacity:0.4}} }}
+        @keyframes pulse {{ 0%,100%{{opacity:1;box-shadow:0 0 10px #0047FF}} 50%{{opacity:0.5;box-shadow:0 0 4px #0047FF}} }}
 
         .left-panel h1 {{
-          font-family: 'Inter', sans-serif;
-          font-size: 2.6rem;
-          font-weight: 700;
+          font-family: 'Inter', system-ui, sans-serif;
+          font-size: 2.8rem;
+          font-weight: 900;
           color: #ffffff;
-          line-height: 1.1;
-          letter-spacing: -0.02em;
-          margin-bottom: 16px;
+          line-height: 0.95;
+          letter-spacing: -0.04em;
+          margin-bottom: 18px;
         }}
         .left-panel p {{
-          color: #8a9bb5;
-          font-family: 'Inter', sans-serif;
-          font-size: 0.95rem;
-          line-height: 1.7;
+          color: rgba(138,155,181,0.85);
+          font-family: 'Inter', system-ui, sans-serif;
+          font-size: 0.92rem;
+          font-weight: 400;
+          line-height: 1.75;
           max-width: 340px;
           margin-bottom: 32px;
         }}
@@ -197,25 +205,26 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           display: {'inline-flex' if show_get_started else 'none'};
           align-items: center;
           gap: 8px;
-          padding: 13px 28px;
-          background: #0047FF;
-          color: #020b14;
-          font-family: 'Inter', sans-serif;
-          font-size: 0.82rem;
+          padding: 14px 30px;
+          background: linear-gradient(135deg, #0047FF 0%, rgba(14,168,216,0.9) 100%);
+          color: #ffffff;
+          font-family: 'Inter', system-ui, sans-serif;
+          font-size: 0.8rem;
           font-weight: 700;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
           border-radius: 50px;
-          border: none;
+          border: 1px solid rgba(0,71,255,0.3);
           cursor: none;
-          box-shadow: 0 0 24px rgba(0,71,255,0.35), 0 4px 16px rgba(0,0,0,0.3);
-          transition: all 0.2s ease;
+          box-shadow: 0 0 28px rgba(0,71,255,0.4), 0 4px 16px rgba(0,0,0,0.3);
+          transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
           width: fit-content;
+          position: relative;
+          overflow: hidden;
         }}
         .btn:hover {{
-          background: #33dbff;
-          box-shadow: 0 0 40px rgba(0,71,255,0.6), 0 4px 20px rgba(0,0,0,0.4);
-          transform: translateY(-2px);
+          box-shadow: 0 0 44px rgba(0,71,255,0.65), 0 6px 24px rgba(0,0,0,0.45);
+          transform: translateY(-3px);
         }}
 
         /* Spline canvas panel */
@@ -568,7 +577,7 @@ _HEADER_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JobLess AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; cursor: none !important; }
 
@@ -1761,111 +1770,243 @@ class UIComponents:
     def apply_custom_css():
         css = """
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
-        
-            /* Animations */
-            @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            /* ── 21st.dev Globe Hero aesthetic — JobLess AI ─────────────────────── */
+            @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=Space+Mono:wght@400;700&display=swap');
+
+            /* ── Keyframes ────────────────────────────────────────────────────── */
+            @keyframes fadeUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
             @keyframes scan { 0% { left: -100% } 100% { left: 200% } }
-        
-            /* Globals */
+
+            @keyframes shimmer {
+                0%   { left: -100%; opacity: 0; }
+                20%  { opacity: 1; }
+                100% { left: 200%; opacity: 0; }
+            }
+            @keyframes orbPulse {
+                0%, 100% { opacity: 0.5; transform: scale(1) translate(0, 0); }
+                50%       { opacity: 0.9; transform: scale(1.06) translate(20px, -15px); }
+            }
+            @keyframes orbPulse2 {
+                0%, 100% { opacity: 0.35; transform: scale(1) translate(0, 0); }
+                50%       { opacity: 0.7; transform: scale(1.08) translate(-18px, 12px); }
+            }
+            @keyframes pingPip {
+                0%   { box-shadow: 0 0 0 0 rgba(0,71,255,0.7); }
+                70%  { box-shadow: 0 0 0 8px rgba(0,71,255,0); }
+                100% { box-shadow: 0 0 0 0 rgba(0,71,255,0); }
+            }
+            @keyframes gradientShift {
+                0%   { background-position: 0% 50%; }
+                50%  { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+
+            /* ── Ambient background orbs (21st.dev blur-3xl style) ────────────── */
+            .stApp::before {
+                content: '';
+                position: fixed;
+                top: 20%; left: 20%;
+                width: 700px; height: 700px;
+                border-radius: 50%;
+                background: radial-gradient(circle at center, rgba(0,71,255,0.07) 0%, transparent 65%);
+                pointer-events: none;
+                z-index: 0;
+                animation: orbPulse 10s ease-in-out infinite;
+                will-change: transform, opacity;
+            }
+            .stApp::after {
+                content: '';
+                position: fixed;
+                bottom: 15%; right: 15%;
+                width: 500px; height: 500px;
+                border-radius: 50%;
+                background: radial-gradient(circle at center, rgba(0,71,255,0.05) 0%, transparent 65%);
+                pointer-events: none;
+                z-index: 0;
+                animation: orbPulse2 14s ease-in-out infinite;
+                will-change: transform, opacity;
+            }
+
+            /* ── Global base ──────────────────────────────────────────────────── */
             html, body {
                 background: #060606 !important;
                 color: #FAFAF7 !important;
-                font-family: 'Inter', sans-serif !important;
+                font-family: 'Inter', system-ui, sans-serif !important;
                 cursor: none !important;
             }
-            .stApp, .stApp > div, [data-testid="stAppViewContainer"], [data-testid="stAppViewBlockContainer"], .main, .block-container, section.main > div {
+            .stApp, .stApp > div,
+            [data-testid="stAppViewContainer"],
+            [data-testid="stAppViewBlockContainer"],
+            .main, .block-container, section.main > div {
                 background: #060606 !important;
-                font-family: 'Inter', sans-serif !important;
+                font-family: 'Inter', system-ui, sans-serif !important;
                 color: #FAFAF7 !important;
             }
-        
-            /* Typography */
+
+            /* ── Typography — 21st.dev heavy heading style ────────────────────── */
             h1, h2, h3, h4, h5, h6 {
-                font-family: 'Inter', sans-serif !important;
-                font-weight: 700 !important;
-                letter-spacing: -0.03em !important;
+                font-family: 'Inter', system-ui, sans-serif !important;
                 color: #FFFFFF !important;
             }
-            h2 { font-size: 1.8rem !important; }
-            h3 { font-size: 1.2rem !important; font-weight: 600 !important; color: #0047FF !important; }
-            p, li { font-weight: 300 !important; color: #b3b3b3 !important; line-height: 1.7 !important; }
-        
-            /* Streamlit padding resets */
-            .main .block-container { padding-top: 1rem !important; padding-left: 2rem !important; padding-right: 2rem !important; max-width: 100% !important; margin-top: -30px !important; }
-            header[data-testid="stHeader"] { background: #060606 !important; }
-            div[data-testid="stToolbar"], div[data-testid="stDecoration"], div[data-testid="stStatusWidget"] { display: none !important; }
+            h1 {
+                font-weight: 900 !important;
+                letter-spacing: -0.04em !important;
+                line-height: 0.9 !important;
+            }
+            h2 {
+                font-size: 1.8rem !important;
+                font-weight: 800 !important;
+                letter-spacing: -0.03em !important;
+            }
+            h3 {
+                font-size: 1.2rem !important;
+                font-weight: 700 !important;
+                letter-spacing: -0.02em !important;
+                color: #3b82f6 !important;
+            }
+            p, li {
+                font-weight: 400 !important;
+                color: rgba(250,250,247,0.65) !important;
+                line-height: 1.75 !important;
+            }
 
-            /* Sidebar — styled as overlay so it doesn't shift main content */
+            /* ── Streamlit layout resets ──────────────────────────────────────── */
+            .main .block-container {
+                padding-top: 1rem !important;
+                padding-left: 2rem !important;
+                padding-right: 2rem !important;
+                max-width: 100% !important;
+                margin-top: -30px !important;
+            }
+            header[data-testid="stHeader"] { background: #060606 !important; }
+            div[data-testid="stToolbar"],
+            div[data-testid="stDecoration"],
+            div[data-testid="stStatusWidget"] { display: none !important; }
+
+            /* ── Sidebar ──────────────────────────────────────────────────────── */
             [data-testid="stSidebar"] {
-                background: rgba(8,12,24,0.96) !important;
-                backdrop-filter: blur(18px) !important;
-                -webkit-backdrop-filter: blur(18px) !important;
-                border-right: 1px solid rgba(0,71,255,0.2) !important;
-                box-shadow: 4px 0 40px rgba(0,0,0,0.5) !important;
+                background: rgba(5,8,18,0.97) !important;
+                backdrop-filter: blur(24px) !important;
+                -webkit-backdrop-filter: blur(24px) !important;
+                border-right: 1px solid rgba(0,71,255,0.15) !important;
+                box-shadow: 4px 0 60px rgba(0,0,0,0.6) !important;
             }
-            /* Keep main content full-width always */
             [data-testid="stAppViewContainer"] { margin-left: 0 !important; width: 100% !important; }
-            [data-testid="stMain"] { margin-left: 0 !important; width: 100% !important; }
+            [data-testid="stMain"]             { margin-left: 0 !important; width: 100% !important; }
             [data-testid="stSidebar"] > div:first-child { padding-top: 0 !important; }
-            [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.06) !important; margin: 16px 0 !important; }
-            [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-                font-family: 'Space Mono', monospace !important; font-size: 0.75rem !important; color: #7a7a7a !important; text-transform: uppercase !important; letter-spacing: 0.12em !important; margin: 16px 0 8px 0 !important;
+            [data-testid="stSidebar"] hr {
+                border-color: rgba(255,255,255,0.05) !important;
+                margin: 16px 0 !important;
             }
-        
-            /* Tabs */
+            [data-testid="stSidebar"] h1,
+            [data-testid="stSidebar"] h2,
+            [data-testid="stSidebar"] h3 {
+                font-family: 'Space Mono', monospace !important;
+                font-size: 0.68rem !important;
+                color: rgba(0,71,255,0.5) !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.18em !important;
+                margin: 18px 0 8px 0 !important;
+                font-weight: 400 !important;
+            }
+
+            /* ── Tabs ─────────────────────────────────────────────────────────── */
             .stTabs [data-baseweb="tab-list"] {
-                background: rgba(255,255,255,0.03) !important;
-                border-radius: 8px !important;
-                padding: 6px !important;
-                border: 1px solid rgba(255,255,255,0.06) !important;
-                gap: 4px !important;
+                background: rgba(255,255,255,0.02) !important;
+                border-radius: 14px !important;
+                padding: 5px !important;
+                border: 1px solid rgba(255,255,255,0.05) !important;
+                gap: 3px !important;
+                backdrop-filter: blur(12px) !important;
             }
             .stTabs [data-baseweb="tab"] {
-                font-family: 'Inter', sans-serif !important;
-                font-size: 0.85rem !important;
+                font-family: 'Inter', system-ui, sans-serif !important;
+                font-size: 0.82rem !important;
                 font-weight: 500 !important;
-                color: #7a7a7a !important;
-                border-radius: 6px !important;
-                transition: all 0.2s ease !important;
-                padding: 10px 16px !important;
+                color: rgba(250,250,247,0.4) !important;
+                border-radius: 10px !important;
+                transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+                padding: 10px 18px !important;
+                letter-spacing: 0.01em !important;
             }
             .stTabs [data-baseweb="tab"]:hover {
-                background: rgba(255,255,255,0.05) !important;
-                color: #FAFAF7 !important;
+                background: rgba(0,71,255,0.06) !important;
+                color: rgba(250,250,247,0.85) !important;
             }
             .stTabs [aria-selected="true"] {
-                background: rgba(255,255,255,0.08) !important;
+                background: linear-gradient(135deg, rgba(0,71,255,0.18), rgba(0,71,255,0.08)) !important;
                 color: #ffffff !important;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+                border: 1px solid rgba(0,71,255,0.3) !important;
+                box-shadow: 0 4px 16px rgba(0,71,255,0.15), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+                font-weight: 600 !important;
             }
-        
-            /* Cards & Glassmorphism */
+
+            /* ── Cards & Glassmorphism — 21st.dev backdrop-blur-xl ────────────── */
             .result-card, .stat-card, .hist-card, .resource-card, .stExpander {
-                background: rgba(255,255,255,0.02) !important;
-                backdrop-filter: blur(12px) !important;
-                border: 1px solid rgba(255,255,255,0.08) !important;
-                border-radius: 12px !important;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
-                transition: all 0.3s cubic-bezier(0.16,1,0.3,1) !important;
-                position: relative; overflow: hidden;
+                background: rgba(255,255,255,0.018) !important;
+                backdrop-filter: blur(28px) !important;
+                -webkit-backdrop-filter: blur(28px) !important;
+                border: 1px solid rgba(255,255,255,0.055) !important;
+                border-radius: 20px !important;
+                box-shadow:
+                    0 8px 40px rgba(0,0,0,0.35),
+                    inset 0 1px 0 rgba(255,255,255,0.06),
+                    inset 0 0 0 1px rgba(0,71,255,0.02) !important;
+                transition: all 0.4s cubic-bezier(0.16,1,0.3,1) !important;
+                position: relative;
+                overflow: hidden;
             }
-            .result-card { padding: 24px !important; animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1); margin-bottom: 20px; }
-            .result-card:hover, .stat-card:hover, .hist-card:hover, .resource-card:hover, .stExpander:hover {
-                border-color: rgba(0,71,255,0.4) !important;
-                transform: translateY(-4px) !important;
-                box-shadow: 0 16px 48px rgba(0,0,0,0.4) !important;
-                background: rgba(255,255,255,0.04) !important;
+            .result-card {
+                padding: 28px !important;
+                animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1);
+                margin-bottom: 20px;
             }
+            .result-card:hover, .stat-card:hover, .hist-card:hover,
+            .resource-card:hover, .stExpander:hover {
+                border-color: rgba(0,71,255,0.28) !important;
+                transform: translateY(-6px) !important;
+                box-shadow:
+                    0 24px 64px rgba(0,0,0,0.5),
+                    0 0 0 1px rgba(0,71,255,0.12),
+                    inset 0 1px 0 rgba(255,255,255,0.1) !important;
+                background: rgba(255,255,255,0.035) !important;
+            }
+            /* Top-edge gradient line on hover */
+            .result-card::before {
+                content: '';
+                position: absolute;
+                top: 0; left: 0;
+                width: 100%; height: 1px;
+                background: linear-gradient(90deg,
+                    transparent,
+                    rgba(0,71,255,0.6) 30%,
+                    rgba(0,180,255,0.8) 50%,
+                    rgba(0,71,255,0.6) 70%,
+                    transparent);
+                opacity: 0;
+                transition: opacity 0.4s ease;
+            }
+            .result-card:hover::before { opacity: 1; }
+            /* Shimmer scan line on hover */
             .result-card::after {
-                content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-                background: linear-gradient(90deg, #0047FF, transparent); opacity: 0; transition: opacity 0.3s ease;
+                content: '';
+                position: absolute;
+                top: 0; left: -100%;
+                width: 50%; height: 100%;
+                background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255,255,255,0.04),
+                    transparent);
+                transition: none;
             }
-            .result-card:hover::after { opacity: 1; }
-        
-            /* ── Ghost nav buttons: hide the entire bottom block container.
-               These buttons are only used as JS click targets; they must
-               never be visible or take up layout space. ── */
+            .result-card:hover::after {
+                animation: shimmer 0.8s ease forwards;
+            }
+
+            /* ── Ghost nav buttons ────────────────────────────────────────────── */
             [data-testid="stBottomBlockContainer"] {
                 display: none !important;
                 visibility: hidden !important;
@@ -1873,113 +2014,358 @@ class UIComponents:
                 overflow: hidden !important;
             }
 
-            /* Buttons */
+            /* ── Buttons — 21st.dev gradient + shimmer ────────────────────────── */
             .stButton > button {
-                font-family: 'Inter', sans-serif !important;
+                font-family: 'Inter', system-ui, sans-serif !important;
                 font-weight: 600 !important;
-                letter-spacing: 0.05em !important;
-                background: #0047FF !important;
+                font-size: 0.88rem !important;
+                letter-spacing: 0.03em !important;
+                background: linear-gradient(135deg, #0047FF 0%, #0047FF 60%, rgba(0,168,216,0.9) 100%) !important;
+                background-size: 200% 200% !important;
                 color: #FFFFFF !important;
-                border-radius: 6px !important;
-                border: none !important;
-                padding: 10px 24px !important;
-                transition: all 0.2s ease !important;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+                border-radius: 12px !important;
+                border: 1px solid rgba(0,71,255,0.25) !important;
+                padding: 11px 26px !important;
+                transition: all 0.35s cubic-bezier(0.16,1,0.3,1) !important;
+                box-shadow:
+                    0 0 28px rgba(0,71,255,0.28),
+                    0 4px 16px rgba(0,0,0,0.25) !important;
+                position: relative !important;
+                overflow: hidden !important;
+            }
+            .stButton > button::before {
+                content: '' !important;
+                position: absolute !important;
+                top: 0 !important; left: -100% !important;
+                width: 50% !important; height: 100% !important;
+                background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255,255,255,0.25),
+                    transparent) !important;
+                transition: none !important;
+                pointer-events: none !important;
             }
             .stButton > button:hover {
-                background: #003BCC !important;
-                transform: translateY(-2px) !important;
-                box-shadow: 0 8px 24px rgba(0,71,255,0.4) !important;
+                background: linear-gradient(135deg, #1a5fff 0%, #0ea8d8 100%) !important;
+                transform: translateY(-3px) !important;
+                box-shadow:
+                    0 0 44px rgba(0,71,255,0.5),
+                    0 8px 28px rgba(0,0,0,0.35) !important;
+                border-color: rgba(0,71,255,0.5) !important;
             }
-        
-            /* Inputs */
-            .stTextInput > div > div > input, .stTextArea > div > div > textarea, .stSelectbox > div > div, .stMultiSelect > div > div {
-                background: rgba(255,255,255,0.03) !important;
-                border: 1px solid rgba(255,255,255,0.1) !important;
-                border-radius: 8px !important;
+            .stButton > button:hover::before {
+                animation: shimmer 0.65s ease forwards !important;
+            }
+            .stButton > button:active {
+                transform: translateY(-1px) !important;
+            }
+
+            /* ── Inputs — enhanced focus ring ────────────────────────────────── */
+            .stTextInput > div > div > input,
+            .stTextArea > div > div > textarea,
+            .stSelectbox > div > div,
+            .stMultiSelect > div > div {
+                background: rgba(255,255,255,0.025) !important;
+                border: 1px solid rgba(255,255,255,0.08) !important;
+                border-radius: 12px !important;
                 color: #FAFAF7 !important;
-                font-family: 'Inter', sans-serif !important;
+                font-family: 'Inter', system-ui, sans-serif !important;
                 font-size: 0.95rem !important;
-                transition: border-color 0.2s ease, background 0.2s ease !important;
+                transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease !important;
             }
-            .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus, .stSelectbox > div > div:focus-within {
-                border-color: #0047FF !important;
-                background: rgba(0,71,255,0.05) !important;
-                box-shadow: 0 0 0 3px rgba(0,71,255,0.1) !important;
+            .stTextInput > div > div > input:focus,
+            .stTextArea > div > div > textarea:focus,
+            .stSelectbox > div > div:focus-within {
+                border-color: rgba(0,71,255,0.6) !important;
+                background: rgba(0,71,255,0.04) !important;
+                box-shadow:
+                    0 0 0 3px rgba(0,71,255,0.12),
+                    0 0 20px rgba(0,71,255,0.08) !important;
+                outline: none !important;
             }
-            label, .stRadio label, .stCheckbox label, .stSelectbox label, .stTextInput label, .stTextArea label {
+            label, .stRadio label, .stCheckbox label,
+            .stSelectbox label, .stTextInput label, .stTextArea label {
                 font-family: 'Space Mono', monospace !important;
-                font-size: 0.72rem !important;
-                letter-spacing: 0.1em !important;
-                color: #7a7a7a !important;
+                font-size: 0.68rem !important;
+                letter-spacing: 0.14em !important;
+                color: rgba(0,71,255,0.5) !important;
                 text-transform: uppercase !important;
+                font-weight: 400 !important;
             }
-            
-            /* Dividers */
-            hr { border: none !important; border-top: 1px solid rgba(255,255,255,0.08) !important; margin: 32px 0 !important; background: transparent !important; }
-        
-            /* Badge Pills */
+
+            /* ── Dividers ─────────────────────────────────────────────────────── */
+            hr {
+                border: none !important;
+                border-top: 1px solid rgba(255,255,255,0.05) !important;
+                margin: 32px 0 !important;
+                background: transparent !important;
+            }
+
+            /* ── Skill Badge Pills — 21st.dev rounded-full + backdrop-blur ────── */
             .skill-badge {
-                display: inline-block; padding: 4px 12px; border-radius: 4px;
-                font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 400; letter-spacing: 0.04em;
-                margin: 4px; background: rgba(0,71,255,0.15); color: #7AABFF;
-                border: 1px solid rgba(0,71,255,0.3); transition: all 0.2s ease; cursor: default;
+                display: inline-flex;
+                align-items: center;
+                padding: 5px 14px;
+                border-radius: 50px;
+                font-family: 'Space Mono', monospace;
+                font-size: 0.68rem;
+                font-weight: 400;
+                letter-spacing: 0.06em;
+                margin: 3px;
+                background: rgba(0,71,255,0.1);
+                color: rgba(0,180,255,0.9);
+                border: 1px solid rgba(0,71,255,0.25);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+                cursor: default;
             }
-            .skill-badge:hover { background: rgba(0,71,255,0.25); border-color: #0047FF; color: #fff; transform: translateY(-1px); }
-            .skill-badge.purple { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #c084fc; }
-            .skill-badge.green { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.3); color: #6ee7b7; }
-        
-            /* Match Ring */
+            .skill-badge:hover {
+                background: rgba(0,71,255,0.2);
+                border-color: rgba(0,71,255,0.6);
+                color: #fff;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 16px rgba(0,71,255,0.2);
+            }
+            .skill-badge.purple {
+                background: rgba(168,85,247,0.1);
+                border-color: rgba(168,85,247,0.3);
+                color: #c084fc;
+            }
+            .skill-badge.green {
+                background: rgba(52,211,153,0.1);
+                border-color: rgba(52,211,153,0.3);
+                color: #6ee7b7;
+            }
+
+            /* ── Match Ring ───────────────────────────────────────────────────── */
             .match-ring-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
-            .match-ring { position:relative; width:80px; height:80px; }
+            .match-ring { position:relative; width:84px; height:84px; }
             .match-ring svg { transform:rotate(-90deg); }
-            .match-ring .ring-bg { fill:none; stroke:rgba(255,255,255,0.05); stroke-width:5; }
-            .match-ring .ring-fill { fill:none; stroke-width:5; stroke-linecap:round; transition:stroke-dashoffset 1.2s cubic-bezier(.16,1,.3,1); filter:drop-shadow(0 0 4px currentColor); }
+            .match-ring .ring-bg { fill:none; stroke:rgba(255,255,255,0.04); stroke-width:5; }
+            .match-ring .ring-fill {
+                fill:none; stroke-width:5; stroke-linecap:round;
+                transition: stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1);
+                filter: drop-shadow(0 0 6px currentColor);
+            }
             .match-ring .ring-text { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-            .match-ring .ring-pct { font-size:1.4rem; font-weight:700; color:#fff; line-height:1; }
-            .match-ring .ring-label { font-size:0.55rem; color:rgba(255,255,255,0.4); letter-spacing:0.1em; text-transform:uppercase; font-family:'Space Mono', monospace; margin-top: 2px;}
-        
-            /* Components */
+            .match-ring .ring-pct { font-size:1.45rem; font-weight:800; color:#fff; line-height:1; letter-spacing:-0.03em; }
+            .match-ring .ring-label { font-size:0.52rem; color:rgba(255,255,255,0.35); letter-spacing:0.12em; text-transform:uppercase; font-family:'Space Mono',monospace; margin-top:3px; }
+
+            /* ── Stat cards ───────────────────────────────────────────────────── */
             .stats-row { display:flex; gap:16px; margin:20px 0; flex-wrap:wrap; }
-            .stat-card { padding: 24px 20px; text-align: left; }
-            .stat-card .stat-num { font-size: 2.2rem; font-weight: 700; color: #FAFAF7; line-height: 1; margin-bottom: 8px;}
-            .stat-card .stat-lbl { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: #7a7a7a; text-transform: uppercase; letter-spacing: 0.1em; }
-            .hist-card { padding: 20px; margin-bottom: 16px; border-radius: 10px; text-decoration: none; }
+            .stat-card { padding: 26px 22px; text-align: left; }
+            .stat-card .stat-num {
+                font-size: 2.4rem;
+                font-weight: 900;
+                color: #FAFAF7;
+                line-height: 1;
+                margin-bottom: 8px;
+                letter-spacing: -0.04em;
+            }
+            .stat-card .stat-lbl {
+                font-family: 'Space Mono', monospace;
+                font-size: 0.62rem;
+                color: rgba(0,71,255,0.5);
+                text-transform: uppercase;
+                letter-spacing: 0.14em;
+            }
+
+            /* ── History & resource cards ─────────────────────────────────────── */
+            .hist-card { padding: 22px; margin-bottom: 14px; border-radius: 16px; text-decoration: none; }
             .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 16px 0; }
-            .resource-card { padding: 24px; text-decoration: none; display: block; }
-            .resource-card .rc-icon { font-size: 1.8rem; margin-bottom: 12px; }
-            .resource-card .rc-name { font-size: 1.05rem; font-weight: 600; color: #FAFAF7; margin-bottom: 6px; }
-            .resource-card .rc-desc { font-size: 0.85rem; color: #7a7a7a; line-height: 1.6; }
-            .resource-card .rc-tag { display: inline-block; margin-top: 14px; font-family: 'Space Mono', monospace; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; background: rgba(255,255,255,0.05); color: #FAFAF7; border: 1px solid rgba(255,255,255,0.1); }
-            .tip-item  { display:flex; gap:10px; align-items:flex-start; padding:12px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); margin-bottom:8px; font-size:0.88rem; color:#d8b4fe; }
-            .learn-item { display:flex; gap:10px; align-items:center; padding:12px; border-radius:8px; background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.15); margin-bottom:8px; font-size:0.88rem; color:#6ee7b7; }
-            .compare-header { font-family:'Inter',sans-serif; font-size:1.4rem; letter-spacing:0; color:#FAFAF7; margin-bottom:12px; }
-            .compare-cell { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:20px; height:100%; }
-        
-            /* Progress Bar */
-            .stProgress > div > div > div { background: #0047FF !important; border-radius: 4px !important; }
-        
-            /* Job Links */
-            .job-links-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
-            .job-link-btn { display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:6px; font-size:0.8rem; font-weight:500; text-decoration:none!important; border:1px solid; transition:all 0.2s ease; background:rgba(255,255,255,0.03); color:#FAFAF7; border-color:rgba(255,255,255,0.1); }
-            .job-link-btn:hover { background: rgba(0,71,255,0.1); border-color: #0047FF; transform: translateY(-2px); }
-        
-            /* Custom Hamburger Menu overrides for minimal theme */
+            .resource-card { padding: 26px; text-decoration: none; display: block; }
+            .resource-card .rc-icon { font-size: 1.8rem; margin-bottom: 14px; }
+            .resource-card .rc-name { font-size: 1.05rem; font-weight: 700; color: #FAFAF7; margin-bottom: 6px; letter-spacing: -0.01em; }
+            .resource-card .rc-desc { font-size: 0.84rem; color: rgba(250,250,247,0.5); line-height: 1.65; }
+            .resource-card .rc-tag {
+                display: inline-block;
+                margin-top: 14px;
+                font-family: 'Space Mono', monospace;
+                font-size: 0.62rem;
+                padding: 4px 12px;
+                border-radius: 50px;
+                background: rgba(0,71,255,0.1);
+                color: rgba(0,180,255,0.8);
+                border: 1px solid rgba(0,71,255,0.22);
+            }
+
+            /* ── Interview / tip items ───────────────────────────────────────── */
+            .tip-item {
+                display:flex; gap:10px; align-items:flex-start;
+                padding:14px 16px; border-radius:12px;
+                background: rgba(168,85,247,0.05);
+                border: 1px solid rgba(168,85,247,0.15);
+                margin-bottom:8px; font-size:0.88rem; color:#d8b4fe;
+                backdrop-filter: blur(8px);
+            }
+            .learn-item {
+                display:flex; gap:10px; align-items:center;
+                padding:14px 16px; border-radius:12px;
+                background: rgba(52,211,153,0.04);
+                border: 1px solid rgba(52,211,153,0.14);
+                margin-bottom:8px; font-size:0.88rem; color:#6ee7b7;
+                backdrop-filter: blur(8px);
+            }
+
+            /* ── Compare ──────────────────────────────────────────────────────── */
+            .compare-header {
+                font-family:'Inter', system-ui, sans-serif;
+                font-size:1.5rem;
+                font-weight: 800;
+                letter-spacing: -0.03em;
+                color:#FAFAF7;
+                margin-bottom:12px;
+            }
+            .compare-cell {
+                background: rgba(255,255,255,0.02);
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 16px;
+                padding: 22px;
+                height: 100%;
+                backdrop-filter: blur(20px);
+            }
+
+            /* ── Progress Bar — with glow ─────────────────────────────────────── */
+            .stProgress > div > div > div {
+                background: linear-gradient(90deg, #0047FF, #0ea8d8) !important;
+                border-radius: 50px !important;
+                box-shadow: 0 0 12px rgba(0,71,255,0.4) !important;
+            }
+
+            /* ── Job Links ────────────────────────────────────────────────────── */
+            .job-links-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+            .job-link-btn {
+                display:inline-flex; align-items:center; gap:8px;
+                padding:8px 18px; border-radius:50px;
+                font-size:0.78rem; font-weight:500;
+                text-decoration:none !important;
+                border: 1px solid rgba(255,255,255,0.08);
+                transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+                background: rgba(255,255,255,0.025);
+                color: #FAFAF7;
+                backdrop-filter: blur(8px);
+            }
+            .job-link-btn:hover {
+                background: rgba(0,71,255,0.12);
+                border-color: rgba(0,71,255,0.4);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0,71,255,0.15);
+                color: #fff;
+            }
+
+            /* ── Hamburger + nav panel ────────────────────────────────────────── */
             #jl-hamburger {
-                background: rgba(10,10,10,0.65); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                background: rgba(5,8,18,0.7);
+                border: 1px solid rgba(0,71,255,0.2);
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,71,255,0.05);
+                backdrop-filter: blur(16px);
             }
-            #jl-hamburger:hover { background: rgba(0,71,255,0.2); border-color: #0047FF; }
-            #jl-hamburger span { background: #FFFFFF; }
+            #jl-hamburger:hover {
+                background: rgba(0,71,255,0.15);
+                border-color: rgba(0,71,255,0.5);
+                box-shadow: 0 0 24px rgba(0,71,255,0.2);
+            }
+            #jl-hamburger span { background: #0047FF; }
             #jl-nav-panel {
-                background: rgba(10,10,10,0.95); border-left: 1px solid rgba(255,255,255,0.06); box-shadow: -8px 0 40px rgba(0,0,0,0.8);
+                background: rgba(4,6,16,0.97);
+                border-left: 1px solid rgba(0,71,255,0.1);
+                box-shadow: -8px 0 60px rgba(0,0,0,0.8);
+                backdrop-filter: blur(32px);
             }
-            #jl-nav-panel .nav-label { color: #7a7a7a; }
-            #jl-nav-panel .nav-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #fff; }
-            #jl-nav-panel .nav-item.active { background: rgba(0,71,255,0.1); border-color: #0047FF; color: #fff; }
-            #jl-nav-panel .settings-btn { border-color: rgba(255,255,255,0.1); color: #FAFAF7; background: rgba(255,255,255,0.05); }
-            #jl-nav-panel .settings-btn:hover { background: rgba(0,71,255,0.2); border-color: #0047FF; }
+            #jl-nav-panel .nav-label { color: rgba(0,71,255,0.45); }
+            #jl-nav-panel .nav-item:hover {
+                background: rgba(0,71,255,0.07);
+                border-color: rgba(0,71,255,0.18);
+                color: #fff;
+            }
+            #jl-nav-panel .nav-item.active {
+                background: rgba(0,71,255,0.12);
+                border-color: rgba(0,71,255,0.35);
+                color: #3b82f6;
+            }
+            #jl-nav-panel .settings-btn {
+                border-color: rgba(255,255,255,0.08);
+                color: rgba(250,250,247,0.7);
+                background: rgba(255,255,255,0.03);
+            }
+            #jl-nav-panel .settings-btn:hover {
+                background: rgba(0,71,255,0.15);
+                border-color: rgba(0,71,255,0.4);
+            }
+
+            /* ── Streamlit native widget polish ──────────────────────────────── */
+            /* Slider */
+            .stSlider > div > div > div > div {
+                background: linear-gradient(90deg, #0047FF, #0ea8d8) !important;
+            }
+            /* Select slider active */
+            .stSelectSlider > div > div {
+                background: rgba(0,71,255,0.12) !important;
+                border: 1px solid rgba(0,71,255,0.25) !important;
+                border-radius: 10px !important;
+            }
+            /* Radio / Checkbox */
+            .stRadio > div > label > div:first-child,
+            .stCheckbox > label > div:first-child {
+                border-color: rgba(0,71,255,0.4) !important;
+            }
+            /* Download button — distinct from primary */
+            .stDownloadButton > button {
+                font-family: 'Inter', system-ui, sans-serif !important;
+                font-weight: 600 !important;
+                background: rgba(0,71,255,0.08) !important;
+                color: rgba(0,180,255,0.9) !important;
+                border: 1px solid rgba(0,71,255,0.3) !important;
+                border-radius: 12px !important;
+                padding: 11px 26px !important;
+                transition: all 0.3s cubic-bezier(0.16,1,0.3,1) !important;
+                backdrop-filter: blur(12px) !important;
+                box-shadow: none !important;
+            }
+            .stDownloadButton > button:hover {
+                background: rgba(0,71,255,0.18) !important;
+                border-color: rgba(0,71,255,0.55) !important;
+                color: #fff !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 0 28px rgba(0,71,255,0.2) !important;
+            }
+            /* Expander header */
+            .stExpander > div > div > div > p,
+            .stExpander summary {
+                font-family: 'Inter', system-ui, sans-serif !important;
+                font-weight: 600 !important;
+                font-size: 0.95rem !important;
+                color: rgba(250,250,247,0.85) !important;
+                letter-spacing: -0.01em !important;
+            }
+            /* Alerts */
+            .stAlert {
+                border-radius: 14px !important;
+                backdrop-filter: blur(16px) !important;
+                border: 1px solid !important;
+            }
+            /* Spinner */
+            .stSpinner > div {
+                border-color: rgba(0,71,255,0.15) !important;
+                border-top-color: #0047FF !important;
+            }
+            /* Success / error / warning messages */
+            div[data-testid="stNotification"] {
+                border-radius: 14px !important;
+                backdrop-filter: blur(20px) !important;
+                background: rgba(5,8,18,0.92) !important;
+            }
+
+            /* ── Subtle section separator ─────────────────────────────────────── */
+            hr {
+                border: none !important;
+                border-top: 1px solid rgba(255,255,255,0.045) !important;
+                margin: 32px 0 !important;
+                background: transparent !important;
+            }
         </style>
-        
         """
         st.markdown(css, unsafe_allow_html=True)
 
@@ -6014,7 +6400,7 @@ def main():
 <html>
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { background: #060606 !important; background-color: #060606 !important; overflow: hidden; }
@@ -6136,19 +6522,19 @@ html, body { background: #060606 !important; background-color: #060606 !importan
 }
 
 .card-title {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   color: #FAFAF7;
   margin-bottom: 4px;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
 }
 
 .card-desc {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.72rem;
-  color: #4a5a72;
-  line-height: 1.4;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.71rem;
+  color: rgba(74,90,114,0.9);
+  line-height: 1.45;
 }
 
 .card-arrow {
@@ -6156,54 +6542,56 @@ html, body { background: #060606 !important; background-color: #060606 !importan
   bottom: 10px;
   right: 12px;
   font-size: 0.7rem;
-  color: rgba(0,71,255,0.3);
+  color: rgba(0,71,255,0.28);
   font-family: 'Space Mono', monospace;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.25s cubic-bezier(0.16,1,0.3,1), transform 0.25s cubic-bezier(0.16,1,0.3,1);
 }
 .card:hover .card-arrow {
-  color: rgba(0,71,255,0.7);
-  transform: translate(2px, -2px);
+  color: rgba(0,180,255,0.8);
+  transform: translate(3px, -3px);
 }
 
-/* ── Get Started button ── */
+/* ── Get Started button — 21st.dev gradient shimmer ── */
 .gs-wrap {
   padding: 2px 0 0 0;
 }
 .gs-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 22px;
+  gap: 8px;
+  padding: 11px 26px;
   background: linear-gradient(135deg, #0047FF 0%, #0ea8d8 100%);
-  color: #020b14;
-  font-family: 'Inter', sans-serif;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   border-radius: 50px;
-  border: none;
+  border: 1px solid rgba(0,71,255,0.3);
   cursor: pointer;
-  box-shadow: 0 0 28px rgba(0,71,255,0.35), 0 4px 16px rgba(0,0,0,0.35);
-  transition: all 0.22s ease;
+  box-shadow: 0 0 32px rgba(0,71,255,0.4), 0 4px 18px rgba(0,0,0,0.38);
+  transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
   position: relative;
   overflow: hidden;
 }
 .gs-btn::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    180px 180px at calc(var(--bx,50%) * 1%) calc(var(--by,50%) * 1%),
-    rgba(255,255,255,0.18),
-    transparent
-  );
-  transition: opacity 0.2s;
-  opacity: 0;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  transition: none;
 }
-.gs-btn:hover { transform: translateY(-2px); box-shadow: 0 0 44px rgba(0,71,255,0.55), 0 6px 22px rgba(0,0,0,0.4); }
-.gs-btn:hover::before { opacity: 1; }
-.gs-btn:active { transform: translateY(0px); }
+.gs-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 48px rgba(0,71,255,0.6), 0 8px 26px rgba(0,0,0,0.45);
+}
+.gs-btn:hover::before {
+  left: 200%;
+  transition: left 0.6s ease;
+}
+.gs-btn:active { transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -6313,12 +6701,14 @@ document.addEventListener('mousemove', function(e) {
 
     # Footer
     st.markdown(f"""
-        <div style="text-align:center;padding:20px;color:#b3b3b3;">
-            © {datetime.date.today().year} JobLess AI | Created by Anubhab Mondal
+        <div style="text-align:center;padding:28px;color:rgba(255,255,255,0.25);
+                    font-family:'Inter',system-ui,sans-serif;font-size:0.78rem;
+                    border-top:1px solid rgba(255,255,255,0.04);margin-top:20px;">
+            © {datetime.date.today().year} <span style="color:rgba(0,71,255,0.6);font-weight:600;">JobLess AI</span> · Created by Anubhab Mondal
             <br>
-            <span style="font-size:0.77rem;color:#475569;">
+            <span style="font-size:0.7rem;color:rgba(255,255,255,0.15);font-family:'Space Mono',monospace;letter-spacing:0.05em;">
                 Your resume data is processed by your chosen AI provider and is
-                <strong>not stored</strong> by this app.
+                <strong style="color:rgba(255,255,255,0.25);">not stored</strong> by this app.
             </span>
         </div>
     """, unsafe_allow_html=True)

@@ -2533,7 +2533,7 @@ html,body{background:#0A0A0A!important;font-family:'DM Sans',sans-serif}
 .pyq-info{flex:1}
 .pyq-name{font-size:.7rem;font-weight:600;color:#FAFAF7;font-family:'Syne',sans-serif;margin-bottom:2px}
 .pyq-meta{font-size:.57rem;color:rgba(255,255,255,.3);font-family:'DM Mono',monospace}
-.pyq-count{background:rgba(0,71,255,.1);border:1px solid rgba(0,71,255,.2);border-radius:6px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:.58rem;color:#0047FF;flex-shrink:0}
+.pyq-count{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:.58rem;color:#FFFFFF;flex-shrink:0}
 
 /* ── Mobile: stack panels vertically so Live Preview stays visible ── */
 @media (max-width: 520px) {
@@ -4859,16 +4859,41 @@ def render_sidebar(config: Config) -> tuple[str, str, str, bool, bool]:
             f"""<div style="font-family:'Space Mono',monospace;font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(0,71,255,0.75);margin-bottom:6px;">🔑 {selected_provider} API Key</div>""", unsafe_allow_html=True)
 
         current_key = config.get_api_key(selected_provider)
-        api_key_input = st.text_input(
-            "API Key", value=current_key, type="password",
-            placeholder=f"Paste your {selected_provider} key...",
-            key=f"key_input_{selected_provider}", label_visibility="collapsed",
-        )
-        if api_key_input != current_key:
-            config.set_api_key(api_key_input, selected_provider)
-            if api_key_input:
-                st.success("✅ Key saved!")
-                st.rerun()
+
+        # ── Groq: hide key from user, auto-load from st.secrets ──
+        _is_groq_sidebar = ("Groq" in selected_provider or "groq" in selected_provider.lower())
+        _groq_sidebar_secret = ""
+        if _is_groq_sidebar:
+            try:
+                _groq_sidebar_secret = st.secrets.get("GROQ_API_KEY", "")
+            except Exception:
+                pass
+
+        if _is_groq_sidebar and _groq_sidebar_secret:
+            # Auto-set the key silently (never display it)
+            if not st.session_state.get(f"api_key_{selected_provider}", ""):
+                config.set_api_key(_groq_sidebar_secret, selected_provider)
+            st.markdown("""
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);
+                        border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.9rem;">⚡</span>
+                <span style="color:#E5E5E5;font-size:0.78rem;font-weight:500;flex:1;">Pre-configured</span>
+                <span style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
+                             border-radius:5px;padding:2px 8px;font-size:0.6rem;color:#999;
+                             font-family:'Space Mono',monospace;">CONNECTED</span>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            api_key_input = st.text_input(
+                "API Key", value=current_key, type="password",
+                placeholder=f"Paste your {selected_provider} key...",
+                key=f"key_input_{selected_provider}", label_visibility="collapsed",
+            )
+            if api_key_input != current_key:
+                config.set_api_key(api_key_input, selected_provider)
+                if api_key_input:
+                    st.success("✅ Key saved!")
+                    st.rerun()
 
         st.markdown(f"""
         <a href="{key_url}" target="_blank" style="text-decoration:none;">
@@ -6217,20 +6242,67 @@ def main():
                                        "Cohere  🆓": "🌊 Cohere (Free)"}.get(p, p),
                 key="inline_provider_select", label_visibility="collapsed"
             )
-            _inline_key = st.text_input(
-                "API Key", type="password",
-                placeholder="Paste your free API key here...",
-                key="inline_api_key_input", label_visibility="collapsed"
-            )
-            if st.button("🚀 Unlock JobLess AI", use_container_width=True, type="primary",
-                         key="inline_save_key"):
-                if _inline_key.strip():
-                    config.set_provider(_inline_provider)
-                    config.set_api_key(_inline_key.strip(), _inline_provider)
-                    st.success("✅ Key saved! Loading your dashboard...")
-                    st.rerun()
+
+            # ── Groq: auto-connect from st.secrets (key never exposed to user) ──
+            _is_groq = ("Groq" in _inline_provider or "groq" in _inline_provider.lower())
+            if _is_groq:
+                _groq_secret = ""
+                try:
+                    _groq_secret = st.secrets.get("GROQ_API_KEY", "")
+                except Exception:
+                    pass
+                if _groq_secret:
+                    st.markdown("""
+                    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.15);
+                                border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:1.1rem;">⚡</span>
+                        <span style="color:#E5E5E5;font-size:0.88rem;font-weight:500;">
+                            Groq is ready — API key is pre-configured
+                        </span>
+                        <span style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+                                     border-radius:6px;padding:3px 10px;font-size:0.7rem;color:#999;font-family:'Space Mono',monospace;">
+                            CONNECTED
+                        </span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    if st.button("🚀 Unlock JobLess AI", use_container_width=True, type="primary",
+                                 key="inline_save_key"):
+                        config.set_provider(_inline_provider)
+                        config.set_api_key(_groq_secret, _inline_provider)
+                        st.success("✅ Groq connected! Loading your dashboard...")
+                        st.rerun()
                 else:
-                    st.error("⚠️ Please paste your API key first.")
+                    # Fallback: no secret configured, let user paste their own
+                    _inline_key = st.text_input(
+                        "API Key", type="password",
+                        placeholder="Paste your Groq API key here...",
+                        key="inline_api_key_input", label_visibility="collapsed"
+                    )
+                    if st.button("🚀 Unlock JobLess AI", use_container_width=True, type="primary",
+                                 key="inline_save_key"):
+                        if _inline_key.strip():
+                            config.set_provider(_inline_provider)
+                            config.set_api_key(_inline_key.strip(), _inline_provider)
+                            st.success("✅ Key saved! Loading your dashboard...")
+                            st.rerun()
+                        else:
+                            st.error("⚠️ Please paste your API key first.")
+            else:
+                # ── Other providers: normal password input ──
+                _inline_key = st.text_input(
+                    "API Key", type="password",
+                    placeholder="Paste your free API key here...",
+                    key="inline_api_key_input", label_visibility="collapsed"
+                )
+                if st.button("🚀 Unlock JobLess AI", use_container_width=True, type="primary",
+                             key="inline_save_key"):
+                    if _inline_key.strip():
+                        config.set_provider(_inline_provider)
+                        config.set_api_key(_inline_key.strip(), _inline_provider)
+                        st.success("✅ Key saved! Loading your dashboard...")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Please paste your API key first.")
         st.stop()
 
     # ── POST-API KEY: full dashboard ───────────────────────────────────────

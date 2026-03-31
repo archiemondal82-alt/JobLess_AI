@@ -196,7 +196,7 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         .gooey-container {{
           position: relative;
           height: 3.6rem;
-          margin-bottom: 28px;
+          margin-bottom: 44px;
           filter: url(#gooey-threshold);
         }}
         .gooey-text {{
@@ -289,14 +289,18 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
 
         /* ── MOBILE ── */
         @media (max-width: 600px) {{
-          .left-panel {{ display: none !important; }}
-          .right-panel {{ flex: 1 !important; width: 100% !important; }}
-          .wrapper {{ height: {height}px !important; }}
+          .wrapper {{ flex-direction: column !important; height: auto !important; min-height: {height}px !important; }}
+          .left-panel {{ flex: 0 0 auto !important; width: 100% !important; padding: 16px 20px !important; }}
+          .left-panel h1 {{ font-size: 1.6rem !important; }}
+          .gooey-container {{ height: 2.4rem !important; margin-bottom: 12px !important; }}
+          .gooey-text {{ font-size: 1.6rem !important; }}
+          .left-panel p {{ font-size: 0.82rem !important; margin-bottom: 14px !important; }}
+          .right-panel {{ flex: 1 !important; width: 100% !important; min-height: 180px !important; }}
         }}
         @media (min-width: 601px) and (max-width: 900px) {{
           .left-panel {{ flex: 0 0 38%; padding: 16px 20px; }}
           .left-panel h1 {{ font-size: 1.6rem; }}
-          .gooey-container {{ height: 2rem; }}
+          .gooey-container {{ height: 2.6rem; margin-bottom: 30px; }}
           .gooey-text {{ font-size: 1.6rem; }}
         }}
       </style>

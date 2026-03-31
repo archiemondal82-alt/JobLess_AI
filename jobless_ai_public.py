@@ -195,8 +195,8 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         /* Gooey text morphing */
         .gooey-container {{
           position: relative;
-          height: {'3.6rem' if show_get_started else '2.4rem'};
-          margin-bottom: {'20px' if show_get_started else '14px'};
+          height: {'3.6rem' if show_get_started else '3.2rem'};
+          margin-bottom: {'20px' if show_get_started else '18px'};
           filter: url(#gooey-threshold);
           overflow: hidden;
         }}
@@ -206,7 +206,7 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
           top: 0;
           display: inline-block;
           font-family: 'Space Grotesk', sans-serif;
-          font-size: {'2.6rem' if show_get_started else '1.6rem'};
+          font-size: {'2.6rem' if show_get_started else '2.2rem'};
           font-weight: 700;
           color: #ffffff;
           line-height: 1.1;

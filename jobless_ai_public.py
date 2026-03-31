@@ -290,13 +290,13 @@ def render_spline_scene(scene_url: str, title: str = "Interactive 3D", descripti
         /* ── MOBILE ── */
         @media (max-width: 600px) {{
           .wrapper {{ flex-direction: column !important; height: auto !important; }}
-          .left-panel {{ flex: 0 0 auto !important; width: 100% !important; padding: 16px 20px !important; }}
+          .left-panel {{ flex: 0 0 auto !important; width: 100% !important; padding: 16px 20px !important; order: 2 !important; }}
           .left-panel h1 {{ font-size: 1.6rem !important; }}
           .gooey-container {{ height: 2.4rem !important; margin-bottom: 12px !important; }}
           .gooey-text {{ font-size: 1.6rem !important; }}
           .left-panel p {{ font-size: 0.82rem !important; margin-bottom: 14px !important; }}
-          {'/* Home: show globe below text */' if show_get_started else '/* Sections: hide globe to fit in compact iframe */'}
-          .right-panel {{ {'flex: 0 0 220px !important; width: 100% !important;' if show_get_started else 'display: none !important;'} }}
+          /* Globe on top, text below */
+          .right-panel {{ order: 1 !important; flex: 0 0 {'220px' if show_get_started else '160px'} !important; width: 100% !important; }}
         }}
         @media (min-width: 601px) and (max-width: 900px) {{
           .left-panel {{ flex: 0 0 38%; padding: 16px 20px; }}
